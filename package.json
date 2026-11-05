@@ -1,0 +1,63 @@
+{
+  "name": "dshify",
+  "version": "0.0.0",
+  "description": "Port agent harness surfaces to DeepSeek Harness with verification. OpenCode first.",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "opencode",
+    "claude-code",
+    "codex",
+    "agents",
+    "skills",
+    "migration",
+    "cli"
+  ],
+  "license": "MIT",
+  "author": "Owadokun Tosin Tobi",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "bin": {
+    "dshify": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eatosin/dshify.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Eatosin/dshify/issues"
+  },
+  "homepage": "https://github.com/Eatosin/dshify#readme",
+  "dependencies": {
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  },
+  "private": "true"
+}
