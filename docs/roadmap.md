@@ -4,6 +4,8 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 ## v0.1 — OpenCode → DSH (current)
 
+**Contract:** this page sequences the work; what "done" means is [spec.md §13](spec.md). Where the two overlap, the spec wins.
+
 **Deliverables**
 
 - `scan`, `plan`, `apply`, `check`, `verify` commands with the contract in [cli.md](cli.md).

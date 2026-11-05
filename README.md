@@ -51,8 +51,10 @@ All commands accept `--json`, `--dest <dir>`, `--root <dir>` (repeatable), `--qu
 ```text
 src/            CLI + core (IR, adapters, emitters, verifier)
 docs/           spec, architecture, CLI contract, per-harness mapping, roadmap
+map/            one card per load-bearing noun + change-impact index (for agents)
 fixtures/       synthetic source-harness repos (committed, tiny, no secrets)
 test/           unit and golden tests
+_tools/         workspace checks: links, generated indexes, walk test
 ```
 
 ## Contributing

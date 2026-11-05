@@ -5,6 +5,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# generated map graph (python _tools/links.py --graph ... then viz.py)
+map/viz.html
+
 # tests
 coverage/
 
