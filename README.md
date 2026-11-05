@@ -2,7 +2,7 @@
 
 Port an existing agent-harness setup to **DeepSeek Harness (DSH)** — with verification, owned writes, and an honest loss report. Not a `sed` script.
 
-> **Status: pre-alpha (spec phase).** The v0.1 contract lives in [docs/spec.md](docs/spec.md). The CLI skeleton exists; no adapter is implemented yet. Do not run it against a repo you cannot restore from git.
+> **Status: pre-alpha.** The v0.1 spec is accepted (2026-11-05) and implementation is in progress. The CLI skeleton exists; no adapter is implemented yet. Do not run it against a repo you cannot restore from git.
 
 ## The problem
 

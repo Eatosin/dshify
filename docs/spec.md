@@ -1,9 +1,9 @@
 # dshify v0.1 specification — OpenCode → DeepSeek Harness
 
-- **Status:** Draft for sign-off (2026-11-05)
+- **Status:** Accepted (2026-11-05)
 - **Owner:** maintainer
 - **Supersedes:** none
-- **Implementation gate:** no adapter code lands until this document is approved. Changes to this contract require a spec PR.
+- **Implementation gate:** cleared — implementation may proceed from this contract. Changes require a spec PR.
 
 ## 1. Problem
 
@@ -275,15 +275,21 @@ Every finding has `{ code, severity, message, path?, capability }`. Severity: `i
 13. No-network test: a guard fails the suite if `http`/`https`/`fetch` is used outside the opt-in probe.
 14. Every emitted skill passes static discovery simulation; `check` fails if the simulation is made to skip it.
 
-## 14. Open questions for sign-off
+## 14. Decisions (accepted 2026-11-05)
 
-1. **Copy vs link default** — proposal: copy (portable). Confirm.
-2. **`--presets` scope** — proposal: opt-in only; bundle written but never installed. Confirm.
-3. **Collision suffix** — proposal: `-command` / `-persona`. Confirm or choose another suffix.
-4. **`--verify-live` in v0.1** — proposal: implemented but experimental, never required. Confirm.
-5. **Lockfile location/name** — proposal: `.dshify.lock.json` at repo root. Confirm.
-6. **Command exit codes** — proposal: 0 ok, 1 internal, 2 usage, 3 drift/conflict, 4 verification failure. Confirm.
-7. **Persona default invocation** — proposal: model-invocable + user-invocable (`/planner` works). Confirm.
+All seven defaults were accepted by the maintainer on 2026-11-05; implementation may proceed.
+
+| # | Decision | Accepted value |
+|---|---|---|
+| 1 | Skill-root default strategy | `copy` (portable); `--strategy link` opt-in |
+| 2 | `--presets` scope | opt-in only; writes `.dsh/harness/`, never installs a bundle |
+| 3 | Collision suffixes | `-command` for commands, `-persona` for personas |
+| 4 | `--verify-live` in v0.1 | implemented but experimental; never an acceptance gate |
+| 5 | Lockfile location/name | `.dshify.lock.json` at repo root |
+| 6 | Exit codes | `0` ok, `1` internal, `2` usage, `3` drift/conflict, `4` verification failure, `5` unsupported request |
+| 7 | Persona invocation | model-invocable **and** user-invocable (`/planner` works) |
+
+Changing any row requires a spec PR. Finding codes, flag names, and the JSON `schemaVersion` are public API from v0.1.
 
 ## Appendix A — DSH discovery facts this spec depends on
 
