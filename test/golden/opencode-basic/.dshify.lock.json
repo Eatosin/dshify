@@ -1,0 +1,130 @@
+{
+  "lockfileVersion": 1,
+  "generatedBy": {
+    "name": "dshify",
+    "version": "0.1.0"
+  },
+  "sourceRoots": [
+    {
+      "harness": "opencode",
+      "path": ".agents/skills",
+      "kind": "skills"
+    },
+    {
+      "harness": "opencode",
+      "path": ".opencode/skills",
+      "kind": "skills"
+    },
+    {
+      "harness": "opencode",
+      "path": "skills",
+      "kind": "skills"
+    }
+  ],
+  "sources": [
+    {
+      "path": ".opencode/agents/reviewer.md",
+      "sha256": "44f2c92a20f6f2e585b50f35e106a91c7020d6bdc41c44ec081d260ee66503f3"
+    },
+    {
+      "path": ".opencode/commands/hello.md",
+      "sha256": "a9d2043f04b9b51081c8456484c2ddfbf853f6b6a7f968aa9b22020fcad77951"
+    },
+    {
+      "path": ".opencode/skills/demo-skill/SKILL.md",
+      "sha256": "9ded0866d8dd256638e8c185aa812d007a9ad52734f2b78a3ae6ba545c1dc4de"
+    },
+    {
+      "path": ".opencode/skills/demo-skill/references/example.md",
+      "sha256": "369270a7696b2d3343cca406124ca86c09d558463528825d15b8dad961e53c5e"
+    },
+    {
+      "path": "skills/extra-skill/SKILL.md",
+      "sha256": "e57d3937bcefdee3df62955bab8b44765dcea116a0bd9b90e8f02cb7b9d98d44"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".dsh/skills/demo-skill/SKILL.md",
+      "kind": "skill",
+      "sha256": "ab7029eb067f0ed127eef344c38a7bd38f7e5d9adbb4d3b33f19e39b82d9cbc3",
+      "sources": [
+        {
+          "path": ".opencode/skills/demo-skill/SKILL.md",
+          "sha256": "9ded0866d8dd256638e8c185aa812d007a9ad52734f2b78a3ae6ba545c1dc4de"
+        }
+      ]
+    },
+    {
+      "path": ".dsh/skills/demo-skill/references/example.md",
+      "kind": "skill-resource",
+      "sha256": "369270a7696b2d3343cca406124ca86c09d558463528825d15b8dad961e53c5e",
+      "sources": [
+        {
+          "path": ".opencode/skills/demo-skill/references/example.md",
+          "sha256": "369270a7696b2d3343cca406124ca86c09d558463528825d15b8dad961e53c5e"
+        }
+      ]
+    },
+    {
+      "path": ".dsh/skills/extra-skill/SKILL.md",
+      "kind": "skill",
+      "sha256": "87396922829370bd89f5bdb313c7f56e0ea60c03200853e06107b1fb03377e30",
+      "sources": [
+        {
+          "path": "skills/extra-skill/SKILL.md",
+          "sha256": "e57d3937bcefdee3df62955bab8b44765dcea116a0bd9b90e8f02cb7b9d98d44"
+        }
+      ]
+    },
+    {
+      "path": ".dsh/skills/hello/SKILL.md",
+      "kind": "command-skill",
+      "sha256": "3f9d140c91d3934df1dcac85265f9898dd9dc8b2e411ee991b3d6c21dbeade5f",
+      "sources": [
+        {
+          "path": ".opencode/commands/hello.md",
+          "sha256": "a9d2043f04b9b51081c8456484c2ddfbf853f6b6a7f968aa9b22020fcad77951"
+        }
+      ]
+    },
+    {
+      "path": ".dsh/skills/reviewer/SKILL.md",
+      "kind": "persona-skill",
+      "sha256": "a3a2cae9583517763d4b3e0fbbbd55d3297ed427c09cc2e87a58c8ed05329bf1",
+      "sources": [
+        {
+          "path": ".opencode/agents/reviewer.md",
+          "sha256": "44f2c92a20f6f2e585b50f35e106a91c7020d6bdc41c44ec081d260ee66503f3"
+        }
+      ]
+    }
+  ],
+  "losses": [
+    {
+      "code": "ARGS_SUBSTITUTION",
+      "severity": "info",
+      "detail": "$ARGUMENTS is replaced by a prose argument sentence"
+    },
+    {
+      "code": "COMMAND_AGENT_ROUTING",
+      "severity": "warning",
+      "detail": "agent \"build\" is not being converted; the routing hint is dropped"
+    },
+    {
+      "code": "EDIT_DENY_ADAPTED",
+      "severity": "warning",
+      "detail": "edit-deny is stated in the persona body; --presets would enforce it as tool switches"
+    },
+    {
+      "code": "MCP_PRESETS_REQUIRED",
+      "severity": "info",
+      "detail": "MCP server \"demo-remote\" is not emitted: MCP rows require the --presets bundle, which is not implemented yet"
+    },
+    {
+      "code": "SUBAGENT_ISOLATION",
+      "severity": "warning",
+      "detail": "a persona skill keeps the instructions but not the subagent's tool isolation (use --presets for that)"
+    }
+  ]
+}

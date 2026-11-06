@@ -86,6 +86,8 @@ All `--json` output is one object with a discriminator, a `schemaVersion`, and `
 
 `scan` replaces `artifacts` with `inventory`; `check` adds `verification: { roots, visible, skipped }`. Findings carry stable codes documented in each mapping doc. Secrets are redacted before serialization.
 
+`apply` reports one `status` per artifact: `written`, `updated`, `unchanged`, `repaired`, `forced`, `conflict`, `name-conflict`, `orphan`. Its finding codes are `REPAIRED`, `UPDATED`, `FORCED`, `CONFLICT`, `NAME_CONFLICT` and `ORPHAN_ARTIFACT`; a run with any conflict or orphan exits 3.
+
 ## Examples (target behavior for v0.1)
 
 ```bash

@@ -1028,6 +1028,7 @@ export async function scanOpencode(input: ScanInput): Promise<HarnessIR> {
     personas,
     mcpServers,
     ...(agentsMd === undefined ? {} : { agentsMd }),
+    roots: roots.map((root) => ({ path: root.abs, kind: root.kind })),
     warnings: sortFindings(warnings),
   };
 }

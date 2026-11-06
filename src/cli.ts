@@ -8,6 +8,8 @@ import { describeError, DshifyError, isDshifyError } from './core/errors.js';
 import type { Finding, HarnessIR } from './core/ir.js';
 import { resolveRoots } from './core/paths.js';
 import { repoRelative } from './core/paths.js';
+import { applyRepo, type ApplyResult } from './core/apply.js';
+import { LOCKFILE_NAME } from './core/lockfile.js';
 import { planRepo } from './core/plan.js';
 import { finding, sortFindings } from './core/report.js';
 import { scanRepo } from './core/scan.js';
@@ -35,7 +37,7 @@ Usage:
 Commands:
   scan    Inventory the source harness (read-only; implemented)
   plan    Show artifacts, losses, and conflicts (read-only; implemented)
-  apply   Write the DSH surface and lockfile (not implemented)
+  apply   Write the DSH surface and lockfile (implemented)
   check   Verify artifacts, lockfile, and DSH discovery (not implemented)
   verify  Discovery check only (not implemented)
 
@@ -55,8 +57,11 @@ interface ParsedArgs {
   readonly quiet: boolean;
   readonly roots: readonly string[];
   readonly dest: string;
+  readonly lockfile: string;
   readonly presets: boolean;
   readonly strategy: 'copy' | 'link';
+  readonly force: boolean;
+  readonly dryRun: boolean;
   readonly help: boolean;
   readonly version: boolean;
 }
@@ -71,6 +76,7 @@ const BOOLEAN_FLAGS = new Set([
   '--quiet',
   '--presets',
   '--force',
+  '--dry-run',
   '--verify-live',
   '--no-color',
 ]);
@@ -83,7 +89,10 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   let help = false;
   let version = false;
   let dest = '.dsh';
+  let lockfile = LOCKFILE_NAME;
   let presets = false;
+  let force = false;
+  let dryRun = false;
   let strategy: 'copy' | 'link' = 'copy';
   const roots: string[] = [];
   const positional: string[] = [];
@@ -108,6 +117,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
       index += 1;
       if (arg === '--root') roots.push(value);
       if (arg === '--dest') dest = value;
+      if (arg === '--lockfile') lockfile = value;
       if (arg === '--strategy') {
         if (value !== 'copy' && value !== 'link') {
           throw DshifyError.usage(`--strategy must be "copy" or "link" (got "${value}")`);
@@ -121,6 +131,8 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
       if (arg === '--json') json = true;
       if (arg === '--quiet') quiet = true;
       if (arg === '--presets') presets = true;
+      if (arg === '--force') force = true;
+      if (arg === '--dry-run') dryRun = true;
       continue;
     }
     if (arg.startsWith('-') && arg !== '-') {
@@ -140,7 +152,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   if (rest.length > 0) {
     throw DshifyError.usage(`unexpected argument "${rest[0] ?? ''}"`);
   }
-  return { command, target, json, quiet, roots, dest, presets, strategy, help, version };
+  return { command, target, json, quiet, roots, dest, lockfile, presets, strategy, force, dryRun, help, version };
 }
 
 function resolveTarget(named: string | undefined, cwd: string): string {
@@ -359,6 +371,145 @@ async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
 }
 
 // --------------------------------------------------------------------------
+// apply
+// --------------------------------------------------------------------------
+
+interface ApplyEnvelope {
+  readonly kind: 'apply';
+  readonly schemaVersion: 1;
+  readonly ok: boolean;
+  readonly root: string;
+  readonly dest: string;
+  readonly lockfile: string;
+  readonly harness: { readonly id: string; readonly version: string };
+  readonly findings: readonly Finding[];
+  readonly artifacts: ReadonlyArray<{
+    readonly path: string;
+    readonly kind: string;
+    readonly capability: string;
+    readonly status: string;
+    readonly sources: readonly string[];
+  }>;
+  readonly summary: {
+    readonly planned: number;
+    readonly written: number;
+    readonly updated: number;
+    readonly unchanged: number;
+    readonly repaired: number;
+    readonly forced: number;
+    readonly conflicts: number;
+    readonly orphans: number;
+  };
+}
+
+function countStatus(result: ApplyResult, status: ApplyResult['results'][number]['status']): number {
+  return result.results.filter((item) => item.status === status).length;
+}
+
+function applySummary(result: ApplyResult): ApplyEnvelope['summary'] {
+  return {
+    planned: result.planned.artifacts.length,
+    written: countStatus(result, 'written'),
+    updated: countStatus(result, 'updated'),
+    unchanged: countStatus(result, 'unchanged'),
+    repaired: countStatus(result, 'repaired'),
+    forced: countStatus(result, 'forced'),
+    conflicts: countStatus(result, 'conflict') + countStatus(result, 'name-conflict'),
+    orphans: countStatus(result, 'orphan'),
+  };
+}
+
+function renderApplyHuman(
+  root: string,
+  dest: string,
+  ir: HarnessIR,
+  result: ApplyResult,
+  cwd: string,
+): string {
+  const lines = [
+    `dshify apply ${displayRoot(root, cwd)} (${ir.harness} adapter ${ir.version})`,
+    `  dest      ${dest}`,
+    `  lockfile  ${result.lockfilePath}`,
+    '',
+    'Apply',
+  ];
+  for (const item of result.results) {
+    lines.push(`  ${item.status.padEnd(13)} ${item.path}`);
+  }
+  if (result.results.length === 0) lines.push('  none');
+  lines.push('', 'Conflicts');
+  if (result.conflicts.length === 0) lines.push('  none');
+  for (const conflict of result.conflicts) {
+    lines.push(`  ${conflict.code.padEnd(14)} ${conflict.path}`);
+  }
+  lines.push(
+    '',
+    'Lockfile',
+    `  ${result.lockfilePath} (${result.lockfile.sources.length} sources, ${result.lockfile.artifacts.length} artifacts${result.lockfileWritten ? ', written' : ', unchanged'})`,
+    '',
+    'Next',
+    `  dshify check ${displayRoot(root, cwd)}`,
+  );
+  return lines.join('\n');
+}
+
+async function runApply(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<number> {
+  // `--dry-run` is accepted but redundant: the dry run is `plan` (spec §5.3).
+  if (parsed.dryRun) return runPlan(parsed, io, cwd);
+
+  const resolved = resolveTarget(parsed.target, cwd);
+  const roots = await resolveRoots(resolved);
+  const ir = await scanRepo({
+    root: roots.scanRoot,
+    extraRoots: parsed.roots,
+    limits: DEFAULT_SCAN_LIMITS,
+  });
+  const result = await applyRepo(ir, {
+    repoRoot: roots.repoRoot,
+    dest: parsed.dest,
+    lockfilePath: parsed.lockfile,
+    presets: parsed.presets,
+    strategy: parsed.strategy,
+    force: parsed.force,
+    version: VERSION,
+    readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
+  });
+  const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
+  const findings = sortFindings([...ir.warnings, ...result.planned.losses, ...result.findings]);
+  const sourcesByPath = new Map(
+    result.planned.artifacts.map((artifact) => [
+      artifact.path,
+      artifact.sources.map((source) => repoRelative(roots.repoRoot, source.path)),
+    ]),
+  );
+
+  if (parsed.json) {
+    const envelope: ApplyEnvelope = {
+      kind: 'apply',
+      schemaVersion: 1,
+      ok: result.ok,
+      root: ir.root,
+      dest,
+      lockfile: result.lockfilePath,
+      harness: { id: ir.harness, version: ir.version },
+      findings,
+      artifacts: result.results.map((item) => ({
+        path: item.path,
+        kind: item.kind,
+        capability: item.capability,
+        status: item.status,
+        sources: sourcesByPath.get(item.path) ?? [],
+      })),
+      summary: applySummary(result),
+    };
+    io.out(JSON.stringify(envelope, null, 2));
+  } else if (!parsed.quiet) {
+    io.out(renderApplyHuman(ir.root, dest, ir, result, cwd));
+  }
+  return result.ok ? 0 : 3;
+}
+
+// --------------------------------------------------------------------------
 // entry
 // --------------------------------------------------------------------------
 
@@ -388,6 +539,9 @@ export async function run(
     }
     if (parsed.command === 'plan') {
       return await runPlan(parsed, io, options.cwd ?? process.cwd());
+    }
+    if (parsed.command === 'apply') {
+      return await runApply(parsed, io, options.cwd ?? process.cwd());
     }
     io.err(`dshify ${parsed.command}: not implemented yet (v0.1 spec: docs/spec.md)`);
     return 1;

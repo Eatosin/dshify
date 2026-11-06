@@ -1,11 +1,11 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { COMMANDS, run } from '../src/cli.js';
 import { HarnessIRSchema } from '../src/core/ir.js';
 import { VERSION } from '../src/version.js';
-import { capture, fixturePath, repoRoot, treeHash } from './helpers.js';
+import { capture, cleanup, copyFixture, fixturePath, repoRoot, treeHash } from './helpers.js';
 
 const cwd = repoRoot();
 const tempDirs: string[] = [];
@@ -68,7 +68,7 @@ describe('cli surface', () => {
   });
 
   it('reports known but unimplemented commands with exit 1', async () => {
-    for (const command of ['apply', 'check', 'verify']) {
+    for (const command of ['check', 'verify']) {
       const c = capture();
       expect(await run([command], c.io, { cwd })).toBe(1);
       expect(c.err()).toContain('not implemented yet');
@@ -221,5 +221,98 @@ describe('plan command', () => {
       await run(['plan', fixturePath('opencode-basic'), '--dest', '../outside'], c.io, { cwd }),
     ).toBe(2);
     expect(c.err()).toContain('inside the repository');
+  });
+});
+
+// --------------------------------------------------------------------------
+// apply
+// --------------------------------------------------------------------------
+
+const fixtureCopies: string[] = [];
+
+async function freshFixture(): Promise<string> {
+  const copied = await copyFixture('opencode-basic');
+  fixtureCopies.push(copied.parent);
+  return copied.root;
+}
+
+afterAll(async () => {
+  await Promise.all(fixtureCopies.map((parent) => cleanup(parent)));
+});
+
+describe('apply command', () => {
+  it('writes the surface and lockfile, then reports the summary', async () => {
+    const root = await freshFixture();
+    const c = capture();
+    expect(await run(['apply', root], c.io, { cwd })).toBe(0);
+    expect(c.out()).toContain('Apply');
+    expect(c.out()).toContain('written');
+    expect(c.out()).toContain('Lockfile');
+    expect(await readFile(path.join(root, '.dsh/skills/hello/SKILL.md'), 'utf8')).toContain(
+      '# /hello',
+    );
+    expect((await stat(path.join(root, '.dshify.lock.json'))).isFile()).toBe(true);
+  });
+
+  it('prints a JSON envelope with statuses', async () => {
+    const root = await freshFixture();
+    const c = capture();
+    expect(await run(['apply', root, '--json'], c.io, { cwd })).toBe(0);
+    const payload = JSON.parse(c.out()) as {
+      kind: string;
+      ok: boolean;
+      lockfile: string;
+      artifacts: Array<{ path: string; status: string; sources: string[] }>;
+      summary: Record<string, number>;
+    };
+    expect(payload.kind).toBe('apply');
+    expect(payload.ok).toBe(true);
+    expect(payload.lockfile).toBe('.dshify.lock.json');
+    expect(payload.artifacts).toHaveLength(5);
+    expect(payload.artifacts.every((artifact) => artifact.status === 'written')).toBe(true);
+    expect(payload.summary.written).toBe(5);
+    expect(payload.summary.conflicts).toBe(0);
+  });
+
+  it('is a no-op on the second run', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    const lockBefore = await readFile(path.join(root, '.dshify.lock.json'), 'utf8');
+    const second = capture();
+    expect(await run(['apply', root, '--json'], second.io, { cwd })).toBe(0);
+    const payload = JSON.parse(second.out()) as { summary: Record<string, number> };
+    expect(payload.summary.unchanged).toBe(5);
+    expect(payload.summary.written).toBe(0);
+    expect(await readFile(path.join(root, '.dshify.lock.json'), 'utf8')).toBe(lockBefore);
+  });
+
+  it('exits 3 on a human edit, preserves it, and --force overwrites', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    const target = path.join(root, '.dsh/skills/reviewer/SKILL.md');
+    await writeFile(target, 'human edit\n');
+    const blocked = capture();
+    expect(await run(['apply', root], blocked.io, { cwd })).toBe(3);
+    expect(blocked.out()).toContain('CONFLICT');
+    expect(await readFile(target, 'utf8')).toBe('human edit\n');
+    const forced = capture();
+    expect(await run(['apply', root, '--force'], forced.io, { cwd })).toBe(0);
+    expect(forced.out()).toContain('forced');
+    expect(await readFile(target, 'utf8')).toContain('reviewer');
+  });
+
+  it('--dry-run writes nothing and behaves like plan', async () => {
+    const root = await freshFixture();
+    const before = await treeHash(root);
+    const c = capture();
+    expect(await run(['apply', root, '--dry-run'], c.io, { cwd })).toBe(0);
+    expect(c.out()).toContain('Plan');
+    expect(await treeHash(root)).toBe(before);
+    await expect(stat(path.join(root, '.dsh'))).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('exits 2 for a missing path', async () => {
+    const c = capture();
+    expect(await run(['apply', path.join(cwd, 'nope')], c.io, { cwd })).toBe(2);
   });
 });

@@ -44,4 +44,4 @@ Each line is the rule; the detail lives where it links.
 
 ## Status
 
-`scan` and `plan` are implemented: scan produces a schema-valid IR, and plan computes deterministic artifact bytes plus the loss report without writing. `apply`, `check` and `verify` are specified, not written — they exit 1. Per-module live/ghost status is in [`map/objects/_index.md`](map/objects/_index.md); trust it over any prose that describes a module as existing.
+`scan`, `plan` and `apply` are implemented: scan produces a schema-valid IR, plan computes deterministic artifact bytes plus the loss report without writing, and apply is the only writer (atomic, idempotent, conflict-preserving, lockfile last). `check` and `verify` are specified, not written — they exit 1. Per-module live/ghost status is in [`map/objects/_index.md`](map/objects/_index.md); trust it over any prose that describes a module as existing.
