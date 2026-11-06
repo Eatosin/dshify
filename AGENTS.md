@@ -35,7 +35,7 @@ Each line is the rule; the detail lives where it links.
 | Test | `npm test` |
 | Watch tests | `npm run test:watch` |
 | Build | `npm run build` |
-| Run locally | `node --experimental-strip-types src/cli.ts --help` (or `npm run build` then `node dist/cli.js`) |
+| Run locally | `npm run build` then `node dist/cli.js --help` (Node's type stripping does not remap `.js` specifiers, so `src/*.ts` cannot run directly) |
 | Workspace checks | `bash _tools/walk-test.sh` and `python3 -I _tools/links.py . --skip fixtures` |
 
 ## Before you claim done
@@ -44,4 +44,4 @@ Each line is the rule; the detail lives where it links.
 
 ## Status
 
-Only `src/cli.ts`, `src/index.ts`, `src/version.ts` exist today — the rest of `src/` is specified, not written. Per-module live/ghost status is in [`map/objects/_index.md`](map/objects/_index.md); trust it over any prose that describes a module as existing.
+`scan` is implemented end to end: `src/core/*`, `src/adapters/opencode/` and the `scan` command produce a schema-valid IR. `plan`, `apply`, `check` and `verify` are specified, not written — they exit 1. Per-module live/ghost status is in [`map/objects/_index.md`](map/objects/_index.md); trust it over any prose that describes a module as existing.

@@ -6,13 +6,13 @@ description: The only public interface — stable JSON, stable exit codes, stdou
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-05 @ 7598ff3
-entity: docs/cli.md (contract); src/cli.ts (exists, commands unimplemented)
+verified: 2026-11-06 @ e97da0f
+entity: docs/cli.md (contract); src/cli.ts (scan implemented; plan/apply/check/verify not)
 ---
 
 # CLI and JSON envelope — the public interface
 
-`dshify <command> [path] [flags]`, one JSON object under `--json`, exit codes `0`–`5`. Contract: `docs/cli.md`. `src/cli.ts` exists today (`partial`): it parses commands, prints help/version, and returns `1` "not implemented yet" — the envelopes and commands are not built.
+`dshify <command> [path] [flags]`, one JSON object under `--json`, exit codes `0`–`5`. Contract: `docs/cli.md`. `scan` is implemented end to end (human summary + `--json` envelope); `plan`/`apply`/`check`/`verify` still return `1` "not implemented yet" (`partial`).
 
 ## Why this shape
 
@@ -35,7 +35,7 @@ Citations: `docs/cli.md`; `docs/spec.md` §10, §14 (decisions 6–7).
 
 ## If you change this
 
-- **Hits:** `docs/cli.md` and `docs/spec.md` §10/§14 (public API — spec PR first), `test/cli.test.ts`, the future human renderer, and the v0.4 plugin wrapper's contract.
+- **Hits:** `docs/cli.md` and `docs/spec.md` §10/§14 (public API — spec PR first), `src/cli.ts`, `test/cli.test.ts`, the future human renderer, and the v0.4 plugin wrapper's contract.
 - **Does not hit:** the IR shape, adapters, or emitters — the wrong next noun is `ir`.
 
 ## Surfaces

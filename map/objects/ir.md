@@ -5,14 +5,14 @@ title: HarnessIR
 description: The narrow waist — adapters produce it, emitters consume it, the report derives from it.
 universe: live
 status: verified
-implementation: ghost
-verified: 2026-11-05 @ 7598ff3
-entity: docs/spec.md §6 (contract); src/core/ir.ts (ghost)
+implementation: partial
+verified: 2026-11-06 @ e97da0f
+entity: docs/spec.md §6 (contract); src/core/ir.ts (schema implemented)
 ---
 
 # HarnessIR — the normalized model between harnesses
 
-The single in-memory model an adapter fills from a source harness and an emitter reads to plan the DSH surface. Contract: `docs/spec.md` §6. Code name `src/core/ir.ts` — **ghost**, no file yet.
+The single in-memory model an adapter fills from a source harness and an emitter reads to plan the DSH surface. Contract: `docs/spec.md` §6. Code name `src/core/ir.ts` — implemented and schema-validated on every scan (`partial`: plan and emitters are still ghost).
 
 ## Why this shape
 
@@ -20,7 +20,7 @@ A direct OpenCode→DSH translator encodes one harness pair in one function; the
 
 ## Shape
 
-- zod schemas plus inferred types: `HarnessIR`, `Skill`, `Command`, `Persona`, `McpServer`.
+- zod schemas plus inferred types in `src/core/ir.ts` (authoritative; the spec sketch is the intent): `HarnessIR`, `Skill`, `Command`, `Persona`, `McpServer`.
 - Every item carries `provenance: { path, sha256, adapter }` and `capability: 'exact' | 'adapted' | 'lossy' | 'manual' | 'unsupported'`. No untyped extras.
 - Identity normalized to kebab-case at scan time; original spelling retained for the report.
 - Body text byte-preserved except documented placeholder rewriting (`docs/mapping/opencode.md` §4).
@@ -38,7 +38,7 @@ Citations: `docs/spec.md` §6; `docs/architecture.md` §3.1–§3.2.
 
 ## If you change this
 
-- **Hits:** `docs/spec.md` §6 (contract change — spec PR first), the capability matrix in `docs/mapping/opencode.md` §2, both seam cards, every golden file that embeds an artifact, adapter snapshot tests, and `src/core/plan.ts` (ghost).
+- **Hits:** `docs/spec.md` §6 (contract change — spec PR first), `src/core/ir.ts`, `src/adapters/opencode/scan.ts`, `test/ir.test.ts`, the capability matrix in `docs/mapping/opencode.md` §2, both seam cards, and every golden file that embeds an artifact (`src/core/plan.ts` is still ghost).
 - **Does not hit:** `docs/cli.md` unless the envelope gains a field; fixtures (they are inputs); the discovery simulation.
 
 ## Surfaces
