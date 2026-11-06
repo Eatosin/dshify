@@ -26,3 +26,17 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  docs:
+    name: docs workspace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Every relative link and every `## Inputs` path in the docs and map resolves.
+      # Fixtures are skipped: malformed records are invalid on purpose.
+      - run: python3 -I _tools/links.py . --skip fixtures
+      # Generated indexes are committed and current; nobody hand-edits them.
+      - run: python3 -I _tools/index.py map/objects fixtures && git diff --exit-code
+      # Walk test: shelves have contracts, cards have their sections, ghost status
+      # is labelled, records have contracts.
+      - run: bash _tools/walk-test.sh --check

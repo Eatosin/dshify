@@ -1,30 +1,30 @@
 # dshify — agent instructions
 
-`dshify` ports agent-harness surfaces (OpenCode first, then Claude Code and Codex) to DeepSeek Harness (DSH) and verifies the result. This file routes; the contract is in [docs/spec.md](docs/spec.md).
+`dshify` ports agent-harness surfaces (OpenCode first, then Claude Code and Codex) to DeepSeek Harness (DSH) and verifies the result. This file is the catalog: it routes and holds no payload. The contract is [`docs/spec.md`](docs/spec.md).
 
-## Non-negotiables
+## Invariants
 
-1. **Spec first.** Behavior changes update `docs/spec.md` (or a doc it cites) before or in the same PR. If code and spec disagree, the PR is wrong.
-2. **Never touch the source harness.** Scan/plan read it; apply writes only `<dest>` and the lockfile. No exceptions, not even reformatting.
-3. **Dry-run is the default model.** Only `apply` writes. `apply` is idempotent and refuses to clobber user-edited artifacts — it reports conflicts instead.
-4. **Determinism.** No timestamps, random ids, absolute paths, or host-specific ordering inside artifacts. Tests compare golden files byte-for-byte.
-5. **Verification is part of conversion.** A plan that cannot be verified is incomplete; `check` must fail when DSH discovery would miss an emitted skill.
-6. **Offline core.** scan/plan/apply/check make no network calls. No telemetry, ever.
-7. **No secrets.** Fixtures are synthetic. Never commit a real token, URL with credentials, or private repository content.
-8. **Small dependencies.** Every runtime dependency needs a justification in the PR. Prefer `node:` built-ins; `yaml` and `zod` are the approved baseline.
+Each line is the rule; the detail lives where it links.
 
-## Layout
+1. **Spec first.** Behavior changes update [`docs/spec.md`](docs/spec.md) (or a doc it cites) in the same PR. If code and spec disagree, the PR is wrong.
+2. **Never touch the source harness.** scan/plan read it; apply writes only `<dest>` and the lockfile — not even reformatting.
+3. **Dry-run is the default model.** Only `apply` writes; it is idempotent and reports conflicts instead of clobbering user edits ([spec §5.3](docs/spec.md)).
+4. **Owned writes.** The lockfile is the ownership record; re-runs update only what dshify created and report everything else.
+5. **Determinism.** No timestamps, random ids, absolute paths, or host-specific ordering inside artifacts; golden files compare byte-for-byte.
+6. **Verification is part of conversion.** A plan that cannot be verified is incomplete; `check` must fail when DSH discovery would miss an emitted skill ([spec §8](docs/spec.md)).
+7. **Offline core.** scan/plan/apply/check make no network calls; no telemetry, ever. `yaml` and `zod` are the only runtime deps.
 
-| Path | Holds |
-|---|---|
-| `src/cli.ts` | argument parsing, exit codes, human/JSON output |
-| `src/core/` | IR types, lockfile, report model, path safety |
-| `src/adapters/<harness>/` | scan source harness → IR (one dir per harness) |
-| `src/emit/dsh/` | IR → `.dsh/skills`, `.dsh/harness/` bundle |
-| `src/verify/` | DSH discovery simulation + optional live check |
-| `docs/mapping/<harness>.md` | capability matrix and loss codes per source harness |
-| `fixtures/<harness>-*/` | tiny synthetic source repos, committed |
-| `test/` | unit, golden, idempotency, and fixture round-trip tests |
+## Route by task
+
+| If you are… | Go to | Stop at |
+|---|---|---|
+| orienting, or asking "what is X / what does this change hit" | [`map/AGENTS.md`](map/AGENTS.md) | the card's **Hits** |
+| changing behavior or any contract | [`docs/spec.md`](docs/spec.md) | a spec PR first |
+| implementing an adapter, emitter, or verifier | [`docs/CONTEXT.md`](docs/CONTEXT.md) → the section it names | the seam card in `map/objects/` |
+| changing flags, exit codes, or JSON | [`docs/cli.md`](docs/cli.md) | public API — spec PR |
+| adding or fixing a fixture | [`fixtures/CONTEXT.md`](fixtures/CONTEXT.md) | the record's own `CONTEXT.md` |
+| style, commits, PR checklist | [`CONTRIBUTING.md`](CONTRIBUTING.md) | its checklist |
+| reporting status | `bash _tools/walk-test.sh` | the ghosts and stubs it lists |
 
 ## Commands
 
@@ -36,23 +36,12 @@
 | Watch tests | `npm run test:watch` |
 | Build | `npm run build` |
 | Run locally | `node --experimental-strip-types src/cli.ts --help` (or `npm run build` then `node dist/cli.js`) |
+| Workspace checks | `bash _tools/walk-test.sh` and `python3 -I _tools/links.py . --skip fixtures` |
 
-## Definition of done for a feature
+## Before you claim done
 
-- Spec/doc updated (mapping doc for adapter work).
-- Tests: happy path, malformed input, idempotent re-run, conflict preservation.
-- Fixture added or extended; golden output reviewed.
-- `npm run typecheck && npm test && npm run build` green.
-- No source-harness writes, no network calls, no secrets.
+`npm run typecheck && npm test && npm run build` green; the spec or mapping doc updated where behavior changed; a fixture record and its golden reviewed if the surface changed; the workspace checks above pass.
 
-## Review checklist for a PR
+## Status
 
-- Does it preserve the "scan → plan → apply → check" boundary?
-- Are new failure modes typed and reported (not thrown as generic errors)?
-- Are paths validated against traversal and symlink escape?
-- Would a second run produce byte-identical files?
-- Is the loss report truthful — no silent "best effort" conversions?
-
-## Style
-
-TypeScript strict, ESM, NodeNext. Conventional commits (`feat(adapter): ...`, `fix(lockfile): ...`). Keep functions small and pure where possible; side effects live in `apply` and the CLI only.
+Only `src/cli.ts`, `src/index.ts`, `src/version.ts` exist today — the rest of `src/` is specified, not written. Per-module live/ghost status is in [`map/objects/_index.md`](map/objects/_index.md); trust it over any prose that describes a module as existing.

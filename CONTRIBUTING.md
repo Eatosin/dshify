@@ -2,6 +2,8 @@
 
 Thanks for helping make harness switches boring. The highest-value contribution is a **new adapter** or a **mapping correction** for an existing one.
 
+Project layout, invariants and commands live in [AGENTS.md](AGENTS.md); this file covers how to contribute, not what the repo is.
+
 ## Before you write code
 
 1. Read [docs/spec.md](docs/spec.md) and the mapping doc for your harness.
@@ -23,7 +25,7 @@ Node 22.12+ (see `engines`), npm 10+.
 
 | Area | Where | Notes |
 |---|---|---|
-| Adapter | `src/adapters/<harness>/` | Implements the `HarnessAdapter` contract in `src/core/adapter.ts` |
+| Adapter | `src/adapters/<harness>/` | Implements the `HarnessAdapter` contract in [docs/architecture.md §3.1](docs/architecture.md) (planned file `src/core/adapter.ts`) |
 | Emitter | `src/emit/dsh/` | Changes here affect every adapter; include golden fixtures |
 | Verification | `src/verify/` | Discovery rules must cite a DSH package/README in a comment |
 | Mapping | `docs/mapping/<harness>.md` | Every loss code needs an example and a severity |

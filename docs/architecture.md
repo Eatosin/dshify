@@ -2,6 +2,8 @@
 
 How `dshify` is put together, and why each seam exists.
 
+> **Status: as-planned for v0.1.** Only `src/cli.ts`, `src/index.ts` and `src/version.ts` exist today; module-level live/ghost status and change impact live in [`map/AGENTS.md`](../map/AGENTS.md). Keep this page for the design rationale (§4) — the map cites it and never restates it.
+
 ## 1. Shape
 
 ```text
