@@ -67,13 +67,6 @@ describe('cli surface', () => {
     expect(c.err()).toContain('--root requires a value');
   });
 
-  it('reports known but unimplemented commands with exit 1', async () => {
-    for (const command of ['check', 'verify']) {
-      const c = capture();
-      expect(await run([command], c.io, { cwd })).toBe(1);
-      expect(c.err()).toContain('not implemented yet');
-    }
-  });
 });
 
 describe('scan command', () => {
@@ -314,5 +307,93 @@ describe('apply command', () => {
   it('exits 2 for a missing path', async () => {
     const c = capture();
     expect(await run(['apply', path.join(cwd, 'nope')], c.io, { cwd })).toBe(2);
+  });
+});
+
+// --------------------------------------------------------------------------
+// check / verify
+// --------------------------------------------------------------------------
+
+describe('check command', () => {
+  it('passes after apply, shows verification, and writes nothing', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    const before = await treeHash(root);
+    const c = capture();
+    expect(await run(['check', root], c.io, { cwd })).toBe(0);
+    expect(c.out()).toContain('Verification');
+    expect(c.out()).toContain('unchanged');
+    expect(await treeHash(root)).toBe(before);
+  });
+
+  it('exits 4 for a missing artifact', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    await rm(path.join(root, '.dsh/skills/hello/SKILL.md'));
+    const c = capture();
+    expect(await run(['check', root], c.io, { cwd })).toBe(4);
+    expect(c.out()).toContain('MISSING_ARTIFACT');
+  });
+
+  it('exits 3 on a human edit', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    await writeFile(path.join(root, '.dsh/skills/reviewer/SKILL.md'), 'human edit\n');
+    const c = capture();
+    expect(await run(['check', root], c.io, { cwd })).toBe(3);
+    expect(c.out()).toContain('CONFLICT');
+  });
+
+  it('prints a JSON envelope with verification', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    const c = capture();
+    expect(await run(['check', root, '--json'], c.io, { cwd })).toBe(0);
+    const payload = JSON.parse(c.out()) as {
+      kind: string;
+      ok: boolean;
+      verification: { visible: unknown[]; roots: string[]; skipped: unknown[] };
+      summary: Record<string, number>;
+    };
+    expect(payload.kind).toBe('check');
+    expect(payload.ok).toBe(true);
+    expect(payload.verification.roots).toEqual(['.dsh/skills', '.agents/skills']);
+    expect(payload.verification.visible).toHaveLength(5);
+    expect(payload.verification.skipped).toEqual([]);
+    expect(payload.summary.unchanged).toBe(5);
+  });
+});
+
+describe('verify command', () => {
+  it('lists the discovered catalog and exits 0', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    const c = capture();
+    expect(await run(['verify', root], c.io, { cwd })).toBe(0);
+    expect(c.out()).toContain('visible  5');
+    expect(c.out()).toContain('.dsh/skills/hello/SKILL.md');
+  });
+
+  it('prints a JSON envelope', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    const c = capture();
+    expect(await run(['verify', root, '--json'], c.io, { cwd })).toBe(0);
+    const payload = JSON.parse(c.out()) as {
+      kind: string;
+      ok: boolean;
+      summary: Record<string, number>;
+      verification: { visible: Array<{ name: string }> };
+    };
+    expect(payload.kind).toBe('verify');
+    expect(payload.ok).toBe(true);
+    expect(payload.summary.visible).toBe(5);
+    expect(payload.verification.visible.map((skill) => skill.name).sort()).toEqual([
+      'demo-skill',
+      'extra-skill',
+      'hello',
+      'marketing-demo',
+      'reviewer',
+    ]);
   });
 });

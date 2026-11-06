@@ -58,6 +58,12 @@ export const FINDING_CODES = {
   CONFLICT: 'CONFLICT',
   ORPHAN_ARTIFACT: 'ORPHAN_ARTIFACT',
   NAME_CONFLICT: 'NAME_CONFLICT',
+
+  // check / verify
+  MISSING_ARTIFACT: 'MISSING_ARTIFACT',
+  DRIFT: 'DRIFT',
+  LOCKFILE_MISSING: 'LOCKFILE_MISSING',
+  DISCOVERY_MISS: 'DISCOVERY_MISS',
 } as const;
 
 export type FindingCode = keyof typeof FINDING_CODES;
@@ -106,6 +112,11 @@ export const DEFAULT_SEVERITY: Readonly<Record<FindingCode, Severity>> = {
   CONFLICT: 'warning',
   ORPHAN_ARTIFACT: 'warning',
   NAME_CONFLICT: 'warning',
+
+  MISSING_ARTIFACT: 'error',
+  DRIFT: 'warning',
+  LOCKFILE_MISSING: 'warning',
+  DISCOVERY_MISS: 'error',
 };
 
 export interface FindingInput {

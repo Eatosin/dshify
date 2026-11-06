@@ -5,14 +5,14 @@ title: DSH discovery
 description: The verification noun — simulate what a DSH session would catalog, from fixed roots and frontmatter rules.
 universe: live
 status: verified
-implementation: ghost
-verified: 2026-11-06 @ 344d97b
-entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts (ghost)
+implementation: partial
+verified: 2026-11-06 @ aa30e42
+entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts (implemented; live probe and fact register pending)
 ---
 
 # DSH discovery — what a session would actually catalog
 
-The rules a DSH session uses to find skills, reimplemented offline so `check` can prove an emitted skill is visible. Contract: `docs/spec.md` §8 — the roots, ranks and frontmatter grammar are recorded there (Appendix A) and are not repeated here. Code name `src/verify/discovery.ts` — **ghost**.
+The rules a DSH session uses to find skills, reimplemented offline so `check` can prove an emitted skill is visible. Contract: `docs/spec.md` §8 — the roots, ranks and frontmatter grammar are recorded there (Appendix A) and are not repeated here. `src/verify/discovery.ts` implements the simulation for the two project roots and `check` consumes it (`partial`: live probe and checked fact register remain).
 
 ## Why this shape
 
@@ -38,7 +38,7 @@ Citations: `docs/spec.md` §7 (reserved commands), §8, Appendix A; `@deepseek-a
 
 ## If you change this
 
-- **Hits:** `docs/spec.md` §8 and Appendix A (spec PR first), `docs/mapping/opencode.md` §3 (nested-skill and name rules), the `check` exit code, discovery fixture tests, `src/verify/live.ts` (ghost), and the emitted frontmatter in [`emitter-contract`](emitter-contract.md).
+- **Hits:** `docs/spec.md` §8 and Appendix A (spec PR first), `src/verify/discovery.ts`, `src/core/check.ts`, `test/discovery.test.ts`, `test/check.test.ts`, `docs/mapping/opencode.md` §3, and the emitted frontmatter in [`emitter-contract`](emitter-contract.md).
 - **Does not hit:** adapters (they never read DSH rules), or the lockfile — the wrong next noun is `lockfile-write-matrix`.
 
 ## Surfaces

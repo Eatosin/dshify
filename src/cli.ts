@@ -9,10 +9,12 @@ import type { Finding, HarnessIR } from './core/ir.js';
 import { resolveRoots } from './core/paths.js';
 import { repoRelative } from './core/paths.js';
 import { applyRepo, type ApplyResult } from './core/apply.js';
+import { checkRepo, type CheckResult } from './core/check.js';
 import { LOCKFILE_NAME } from './core/lockfile.js';
 import { planRepo } from './core/plan.js';
 import { finding, sortFindings } from './core/report.js';
 import { scanRepo } from './core/scan.js';
+import { verifyDiscovery, type DiscoveryResult } from './verify/discovery.js';
 import { DEFAULT_SCAN_LIMITS, readSourceBytes } from './core/source.js';
 
 /** Output sink so the CLI is testable without touching the process streams. */
@@ -38,8 +40,8 @@ Commands:
   scan    Inventory the source harness (read-only; implemented)
   plan    Show artifacts, losses, and conflicts (read-only; implemented)
   apply   Write the DSH surface and lockfile (implemented)
-  check   Verify artifacts, lockfile, and DSH discovery (not implemented)
-  verify  Discovery check only (not implemented)
+  check   Verify artifacts, lockfile, and DSH discovery (implemented)
+  verify  Discovery check only (implemented)
 
 Global flags:
   --json  --quiet  --root <dir>
@@ -510,6 +512,214 @@ async function runApply(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
 }
 
 // --------------------------------------------------------------------------
+// check / verify
+// --------------------------------------------------------------------------
+
+interface VerificationView {
+  readonly roots: readonly string[];
+  readonly visible: ReadonlyArray<{ path: string; name: string; description: string }>;
+  readonly skipped: ReadonlyArray<{ path: string; reason: string }>;
+  readonly complete: boolean;
+}
+
+interface CheckEnvelope {
+  readonly kind: 'check';
+  readonly schemaVersion: 1;
+  readonly ok: boolean;
+  readonly root: string;
+  readonly dest: string;
+  readonly lockfile: string;
+  readonly harness: { readonly id: string; readonly version: string };
+  readonly findings: readonly Finding[];
+  readonly artifacts: ReadonlyArray<{
+    readonly path: string;
+    readonly kind: string;
+    readonly capability: string;
+    readonly status: string;
+    readonly sources: readonly string[];
+  }>;
+  readonly verification: VerificationView;
+  readonly summary: {
+    readonly planned: number;
+    readonly unchanged: number;
+    readonly drift: number;
+    readonly conflicts: number;
+    readonly missing: number;
+    readonly orphans: number;
+    readonly visible: number;
+    readonly skipped: number;
+  };
+}
+
+interface VerifyEnvelope {
+  readonly kind: 'verify';
+  readonly schemaVersion: 1;
+  readonly ok: boolean;
+  readonly root: string;
+  readonly verification: VerificationView;
+  readonly summary: { readonly roots: number; readonly visible: number; readonly skipped: number };
+}
+
+function verificationView(result: DiscoveryResult): VerificationView {
+  return {
+    roots: result.roots,
+    visible: result.visible.map((skill) => ({
+      path: skill.path,
+      name: skill.name,
+      description: skill.description,
+    })),
+    skipped: result.skipped.map((entry) => ({ path: entry.path, reason: entry.reason })),
+    complete: result.complete,
+  };
+}
+
+function countCheck(result: CheckResult, status: CheckResult['results'][number]['status']): number {
+  return result.results.filter((item) => item.status === status).length;
+}
+
+function renderCheckHuman(
+  root: string,
+  dest: string,
+  ir: HarnessIR,
+  result: CheckResult,
+  cwd: string,
+): string {
+  const lines = [
+    `dshify check ${displayRoot(root, cwd)} (${ir.harness} adapter ${ir.version})`,
+    `  dest      ${dest}`,
+    `  lockfile  .dshify.lock.json`,
+    '',
+    'Check',
+  ];
+  for (const item of result.results) {
+    lines.push(`  ${item.status.padEnd(10)} ${item.path}`);
+  }
+  if (result.results.length === 0) lines.push('  none');
+  lines.push('', 'Verification');
+  lines.push(`  roots    ${result.verification.roots.join(', ') || 'none'}`);
+  lines.push(`  visible  ${result.verification.visible.length}`);
+  lines.push(`  skipped  ${result.verification.skipped.length}`);
+  lines.push('', 'Findings');
+  if (result.findings.length === 0) lines.push('  none');
+  for (const item of result.findings) {
+    const where = item.path === undefined ? '' : ` ${item.path}`;
+    lines.push(`  ${item.severity.padEnd(7)} ${item.code.padEnd(20)}${where}`);
+  }
+  lines.push('', 'Next');
+  lines.push(
+    result.ok
+      ? '  none — the destination, lockfile and discovery all agree'
+      : `  dshify apply ${displayRoot(root, cwd)}`,
+  );
+  return lines.join('\n');
+}
+
+async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<number> {
+  const resolved = resolveTarget(parsed.target, cwd);
+  const roots = await resolveRoots(resolved);
+  const ir = await scanRepo({
+    root: roots.scanRoot,
+    extraRoots: parsed.roots,
+    limits: DEFAULT_SCAN_LIMITS,
+  });
+  const result = await checkRepo(ir, {
+    repoRoot: roots.repoRoot,
+    dest: parsed.dest,
+    lockfilePath: parsed.lockfile,
+    presets: parsed.presets,
+    strategy: parsed.strategy,
+    readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
+    limits: DEFAULT_SCAN_LIMITS,
+  });
+  const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
+  const sourcesByPath = new Map(
+    result.planned.artifacts.map((artifact) => [
+      artifact.path,
+      artifact.sources.map((source) => repoRelative(roots.repoRoot, source.path)),
+    ]),
+  );
+
+  if (parsed.json) {
+    const envelope: CheckEnvelope = {
+      kind: 'check',
+      schemaVersion: 1,
+      ok: result.ok,
+      root: ir.root,
+      dest,
+      lockfile: parsed.lockfile,
+      harness: { id: ir.harness, version: ir.version },
+      findings: result.findings,
+      artifacts: result.results.map((item) => ({
+        path: item.path,
+        kind: item.kind,
+        capability: item.capability,
+        status: item.status,
+        sources: sourcesByPath.get(item.path) ?? [],
+      })),
+      verification: verificationView(result.verification),
+      summary: {
+        planned: result.planned.artifacts.length,
+        unchanged: countCheck(result, 'unchanged'),
+        drift: countCheck(result, 'drift'),
+        conflicts: countCheck(result, 'conflict'),
+        missing: countCheck(result, 'missing'),
+        orphans: countCheck(result, 'orphan'),
+        visible: result.verification.visible.length,
+        skipped: result.verification.skipped.length,
+      },
+    };
+    io.out(JSON.stringify(envelope, null, 2));
+  } else if (!parsed.quiet) {
+    io.out(renderCheckHuman(ir.root, dest, ir, result, cwd));
+  }
+  return result.exitCode;
+}
+
+function renderVerifyHuman(root: string, verification: DiscoveryResult, cwd: string): string {
+  const lines = [
+    `dshify verify ${displayRoot(root, cwd)}`,
+    `  roots    ${verification.roots.join(', ') || 'none'}`,
+    `  visible  ${verification.visible.length}`,
+    `  skipped  ${verification.skipped.length}`,
+    `  complete ${verification.complete ? 'yes' : 'no'}`,
+  ];
+  for (const skill of verification.visible) {
+    lines.push(`    visible ${skill.path}`);
+  }
+  for (const entry of verification.skipped) {
+    lines.push(`    skipped ${entry.path} (${entry.reason})`);
+  }
+  return lines.join('\n');
+}
+
+async function runVerify(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<number> {
+  const resolved = resolveTarget(parsed.target, cwd);
+  const roots = await resolveRoots(resolved);
+  const verification = await verifyDiscovery(roots.repoRoot, {
+    maxFileBytes: DEFAULT_SCAN_LIMITS.maxFileBytes,
+  });
+  const ok = verification.complete;
+  if (parsed.json) {
+    const envelope: VerifyEnvelope = {
+      kind: 'verify',
+      schemaVersion: 1,
+      ok,
+      root: roots.repoRoot,
+      verification: verificationView(verification),
+      summary: {
+        roots: verification.roots.length,
+        visible: verification.visible.length,
+        skipped: verification.skipped.length,
+      },
+    };
+    io.out(JSON.stringify(envelope, null, 2));
+  } else if (!parsed.quiet) {
+    io.out(renderVerifyHuman(roots.repoRoot, verification, cwd));
+  }
+  return ok ? 0 : 4;
+}
+
+// --------------------------------------------------------------------------
 // entry
 // --------------------------------------------------------------------------
 
@@ -542,6 +752,12 @@ export async function run(
     }
     if (parsed.command === 'apply') {
       return await runApply(parsed, io, options.cwd ?? process.cwd());
+    }
+    if (parsed.command === 'check') {
+      return await runCheck(parsed, io, options.cwd ?? process.cwd());
+    }
+    if (parsed.command === 'verify') {
+      return await runVerify(parsed, io, options.cwd ?? process.cwd());
     }
     io.err(`dshify ${parsed.command}: not implemented yet (v0.1 spec: docs/spec.md)`);
     return 1;

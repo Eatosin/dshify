@@ -5,14 +5,14 @@ title: lockfile and write matrix
 description: The ownership record and the per-artifact write decision — the whole conflict strategy.
 universe: live
 status: verified
-implementation: partial
-verified: 2026-11-06 @ 5095f29
-entity: docs/spec.md §9 (contract); src/core/lockfile.ts + src/core/apply.ts (implemented for apply; check drift comparison still ghost)
+implementation: live
+verified: 2026-11-06 @ aa30e42
+entity: docs/spec.md §9 (contract); src/core/lockfile.ts + src/core/apply.ts + src/core/check.ts (write matrix and drift comparison implemented)
 ---
 
 # lockfile and write matrix — who owns which file
 
-`.dshify.lock.json` at the repo root records what dshify wrote and from which source bytes; the write matrix decides one action per artifact on every `apply`. Contract: `docs/spec.md` §9. `src/core/lockfile.ts` and `src/core/apply.ts` implement it for `apply` (write matrix, atomic writes, ownership, orphan retention); `check`'s drift comparison is still ghost (`partial`).
+`.dshify.lock.json` at the repo root records what dshify wrote and from which source bytes; the write matrix decides one action per artifact on every `apply`. Contract: `docs/spec.md` §9. `src/core/lockfile.ts`, `src/core/apply.ts` and `src/core/check.ts` implement the write matrix, drift comparison, atomic writes, ownership and orphan retention (`live`).
 
 ## Why this shape
 

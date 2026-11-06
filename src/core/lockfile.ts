@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { z } from 'zod';
 import type { Artifact, Finding, HarnessIR } from './ir.js';
 import { SeveritySchema } from './ir.js';
 import { DshifyError } from './errors.js';
-import { repoRelative } from './paths.js';
+import { isInside, repoRelative } from './paths.js';
 import { compareCodeUnits } from './report.js';
 import { sha256Hex } from './source.js';
 
@@ -164,6 +165,28 @@ export function lockArtifactFor(artifact: Artifact, repoRoot: string): LockArtif
       })),
     ),
   };
+}
+
+export interface LockfileLocation {
+  readonly relative: string;
+  readonly absolute: string;
+}
+
+/** Validate the lockfile path: inside the repo and outside the destination tree. */
+export function resolveLockfileLocation(
+  repoRoot: string,
+  requested: string,
+  destAbs: string,
+): LockfileLocation {
+  const root = path.resolve(repoRoot);
+  const absolute = path.isAbsolute(requested) ? requested : path.resolve(root, requested);
+  if (absolute === root || !isInside(root, absolute)) {
+    throw DshifyError.usage(`--lockfile must name a file inside the repository (got "${requested}")`);
+  }
+  if (isInside(destAbs, absolute)) {
+    throw DshifyError.usage('--lockfile must live outside --dest');
+  }
+  return { relative: repoRelative(root, absolute), absolute };
 }
 
 export function sourceRootsFor(ir: HarnessIR, repoRoot: string): LockSourceRoot[] {

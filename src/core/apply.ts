@@ -22,6 +22,7 @@ import {
   lockArtifactFor,
   lossEntriesFor,
   readLockfile,
+  resolveLockfileLocation,
   serializeLockfile,
   sourcesFromEntries,
   sourceRootsFor,
@@ -152,17 +153,6 @@ async function writeLockfileAtomic(lockfileAbs: string, text: string): Promise<v
   }
 }
 
-function resolveLockfilePath(repoRoot: string, requested: string, destAbs: string): string {
-  const root = path.resolve(repoRoot);
-  const absolute = path.isAbsolute(requested) ? requested : path.resolve(root, requested);
-  if (absolute === root || !isInside(root, absolute)) {
-    throw DshifyError.usage(`--lockfile must name a file inside the repository (got "${requested}")`);
-  }
-  if (isInside(destAbs, absolute)) {
-    throw DshifyError.usage('--lockfile must live outside --dest');
-  }
-  return repoRelative(root, absolute);
-}
 
 function statusFinding(status: ApplyStatus, relativePath: string): Finding | undefined {
   switch (status) {
@@ -198,8 +188,13 @@ export async function applyRepo(ir: HarnessIR, options: ApplyOptions): Promise<A
 
   const destRel = resolveDest(options.repoRoot, options.dest);
   const destAbs = path.join(options.repoRoot, destRel);
-  const lockfileRel = resolveLockfilePath(options.repoRoot, options.lockfilePath, destAbs);
-  const lockfileAbs = path.join(options.repoRoot, lockfileRel);
+  const lockfileLocation = resolveLockfileLocation(
+    options.repoRoot,
+    options.lockfilePath,
+    destAbs,
+  );
+  const lockfileRel = lockfileLocation.relative;
+  const lockfileAbs = lockfileLocation.absolute;
 
   const prior = await readLockfile(lockfileAbs);
   const priorByPath = new Map<string, LockArtifact>(
