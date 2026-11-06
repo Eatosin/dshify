@@ -737,14 +737,7 @@ async function scanPersonas(
     const body = system ?? legacyPrompt ?? parsed.body;
     const modelHint = singleLineString(parsed.data.model);
 
-    warnings.push(
-      finding(
-        'SUBAGENT_ISOLATION',
-        'a subagent becomes a persona skill; its isolation boundary is not reproduced without --presets',
-        { path: rel, capability: 'adapted' },
-      ),
-    );
-
+    // Isolation is a conversion loss, reported by the planner, not a scan fact.
     const canonical = await canonicalize(file);
     const sha256 = await sha256OfFile(file, input.limits);
     out.push({

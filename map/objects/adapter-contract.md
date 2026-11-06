@@ -6,7 +6,7 @@ description: The source-harness seam — one directory per harness, scan reads a
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-06 @ e97da0f
+verified: 2026-11-06 @ 853e4d1
 entity: docs/architecture.md §3.1; src/core/adapter.ts + src/adapters/opencode/ (OpenCode scan implemented)
 ---
 

@@ -145,6 +145,44 @@ export const McpServerSchema = z
   .strict();
 export type McpServer = z.infer<typeof McpServerSchema>;
 
+/**
+ * Planned artifact. Contract: docs/architecture.md §3.2 and docs/spec.md §5.2.
+ * Bytes are computed in memory; `apply` is the only writer.
+ */
+export const ARTIFACT_KINDS = [
+  'skill',
+  'command-skill',
+  'persona-skill',
+  'skill-resource',
+  'bundle-manifest',
+  'bundle-patch',
+] as const;
+export const ArtifactKindSchema = z.enum(ARTIFACT_KINDS);
+export type ArtifactKind = z.infer<typeof ArtifactKindSchema>;
+
+export interface Artifact {
+  /** Repo-relative POSIX destination path. */
+  readonly path: string;
+  readonly kind: ArtifactKind;
+  readonly bytes: Uint8Array;
+  readonly sources: readonly Provenance[];
+  readonly capability: Capability;
+}
+
+/** A blocking or reportable conflict detected while planning. */
+export interface Conflict {
+  readonly code: string;
+  readonly path: string;
+  readonly message: string;
+}
+
+/** Plan output. Contract: docs/spec.md §5.2. */
+export interface PlannedOutput {
+  readonly artifacts: readonly Artifact[];
+  readonly losses: readonly Finding[];
+  readonly conflicts: readonly Conflict[];
+}
+
 export const HarnessIRSchema = z
   .object({
     harness: z.literal('opencode'),

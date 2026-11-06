@@ -4,6 +4,7 @@ export type { CliIO, Command } from './cli.js';
 export type { HarnessAdapter, HarnessId, ScanInput, ScanLimits } from './core/adapter.js';
 export { DshifyError, isDshifyError } from './core/errors.js';
 export {
+  ARTIFACT_KINDS,
   CAPABILITIES,
   HOST_COMMANDS,
   HarnessIRSchema,
@@ -12,16 +13,22 @@ export {
 } from './core/ir.js';
 export type {
   AccessMode,
+  Artifact,
+  ArtifactKind,
   Capability,
   Command as CommandIR,
+  Conflict,
   Finding,
   HarnessIR,
   McpServer,
   Persona,
+  PlannedOutput,
   Provenance,
   Skill,
   SourceRootKind,
 } from './core/ir.js';
+export { planRepo, resolveDest } from './core/plan.js';
+export type { PlanOptions } from './core/plan.js';
 export { DEFAULT_SEVERITY, FINDING_CODES, finding, sortFindings } from './core/report.js';
 export type { FindingCode } from './core/report.js';
 export { getAdapter, listAdapters, scanRepo } from './core/scan.js';

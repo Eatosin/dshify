@@ -29,7 +29,7 @@ export function fixturePath(name: string): string {
 }
 
 export function repoRoot(): string {
-  return fileURLToPath(new URL('..', import.meta.url));
+  return path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 }
 
 /**
@@ -45,4 +45,37 @@ export async function copyFixture(name: string): Promise<{ parent: string; root:
 
 export async function cleanup(parent: string): Promise<void> {
   await rm(parent, { recursive: true, force: true });
+}
+
+/** Recursive list of regular files (relative POSIX paths, sorted). */
+export async function listFiles(root: string, prefix = ''): Promise<string[]> {
+  const { readdir } = await import('node:fs/promises');
+  const entries = await readdir(path.join(root, prefix), { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+    const relative = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      files.push(...(await listFiles(root, relative)));
+    } else if (entry.isFile()) {
+      files.push(relative);
+    }
+  }
+  return files;
+}
+
+/**
+ * Content hash of a whole tree (file names + bytes). Used to prove that a
+ * read-only command wrote nothing.
+ */
+export async function treeHash(root: string): Promise<string> {
+  const { createHash } = await import('node:crypto');
+  const { readFile } = await import('node:fs/promises');
+  const hash = createHash('sha256');
+  for (const file of await listFiles(root)) {
+    hash.update(file);
+    hash.update('\0');
+    hash.update(await readFile(path.join(root, file)));
+    hash.update('\0');
+  }
+  return hash.digest('hex');
 }

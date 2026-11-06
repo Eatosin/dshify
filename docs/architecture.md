@@ -2,7 +2,7 @@
 
 How `dshify` is put together, and why each seam exists.
 
-> **Status: partly built.** `scan` is implemented end to end; `plan`/`apply`/`check`/`verify`, `src/emit/` and `src/verify/` are still planned. Module-level live/ghost status and change impact live in [`map/AGENTS.md`](../map/AGENTS.md). Keep this page for the design rationale (§4) — the map cites it and never restates it.
+> **Status: partly built.** `scan` and `plan` are implemented end to end; `src/emit/dsh/skills.ts` exists but the preset bundle, `apply`/`check`/`verify` and `src/verify/` are still planned. Module-level live/ghost status and change impact live in [`map/AGENTS.md`](../map/AGENTS.md). Keep this page for the design rationale (§4) — the map cites it and never restates it.
 
 ## 1. Shape
 
@@ -88,7 +88,8 @@ interface PlannedOutput {
 
 interface Artifact {
   path: string;                // repo-relative destination
-  kind: 'skill' | 'skill-resource' | 'bundle-manifest' | 'bundle-patch';
+  kind: 'skill' | 'command-skill' | 'persona-skill'
+      | 'skill-resource' | 'bundle-manifest' | 'bundle-patch';
   bytes: Uint8Array;
   sources: Provenance[];
   capability: Capability;

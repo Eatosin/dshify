@@ -6,13 +6,13 @@ description: The narrow waist — adapters produce it, emitters consume it, the 
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-06 @ e97da0f
+verified: 2026-11-06 @ 853e4d1
 entity: docs/spec.md §6 (contract); src/core/ir.ts (schema implemented)
 ---
 
 # HarnessIR — the normalized model between harnesses
 
-The single in-memory model an adapter fills from a source harness and an emitter reads to plan the DSH surface. Contract: `docs/spec.md` §6. Code name `src/core/ir.ts` — implemented and schema-validated on every scan (`partial`: plan and emitters are still ghost).
+The single in-memory model an adapter fills from a source harness and an emitter reads to plan the DSH surface. Contract: `docs/spec.md` §6. Code name `src/core/ir.ts` — implemented and schema-validated on every scan (`partial`: apply/check and the preset bundle are still ghost).
 
 ## Why this shape
 
