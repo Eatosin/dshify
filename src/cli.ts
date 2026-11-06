@@ -5,11 +5,13 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { VERSION } from './version.js';
 import { describeError, DshifyError, isDshifyError } from './core/errors.js';
-import type { Finding } from './core/ir.js';
+import type { Finding, HarnessIR } from './core/ir.js';
 import { resolveRoots } from './core/paths.js';
+import { repoRelative } from './core/paths.js';
+import { planRepo } from './core/plan.js';
 import { finding, sortFindings } from './core/report.js';
 import { scanRepo } from './core/scan.js';
-import { DEFAULT_SCAN_LIMITS } from './core/source.js';
+import { DEFAULT_SCAN_LIMITS, readSourceBytes } from './core/source.js';
 
 /** Output sink so the CLI is testable without touching the process streams. */
 export interface CliIO {
@@ -32,7 +34,7 @@ Usage:
 
 Commands:
   scan    Inventory the source harness (read-only; implemented)
-  plan    Show artifacts, losses, and conflicts (read-only; not implemented)
+  plan    Show artifacts, losses, and conflicts (read-only; implemented)
   apply   Write the DSH surface and lockfile (not implemented)
   check   Verify artifacts, lockfile, and DSH discovery (not implemented)
   verify  Discovery check only (not implemented)
@@ -52,6 +54,9 @@ interface ParsedArgs {
   readonly json: boolean;
   readonly quiet: boolean;
   readonly roots: readonly string[];
+  readonly dest: string;
+  readonly presets: boolean;
+  readonly strategy: 'copy' | 'link';
   readonly help: boolean;
   readonly version: boolean;
 }
@@ -77,6 +82,9 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   let quiet = false;
   let help = false;
   let version = false;
+  let dest = '.dsh';
+  let presets = false;
+  let strategy: 'copy' | 'link' = 'copy';
   const roots: string[] = [];
   const positional: string[] = [];
 
@@ -99,13 +107,20 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
       }
       index += 1;
       if (arg === '--root') roots.push(value);
-      // --dest/--lockfile/--strategy are accepted for forward compatibility but
-      // only plan/apply consume them; scan ignores them.
+      if (arg === '--dest') dest = value;
+      if (arg === '--strategy') {
+        if (value !== 'copy' && value !== 'link') {
+          throw DshifyError.usage(`--strategy must be "copy" or "link" (got "${value}")`);
+        }
+        strategy = value;
+      }
+      // --lockfile is accepted for forward compatibility; apply consumes it.
       continue;
     }
     if (BOOLEAN_FLAGS.has(arg)) {
       if (arg === '--json') json = true;
       if (arg === '--quiet') quiet = true;
+      if (arg === '--presets') presets = true;
       continue;
     }
     if (arg.startsWith('-') && arg !== '-') {
@@ -125,8 +140,21 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   if (rest.length > 0) {
     throw DshifyError.usage(`unexpected argument "${rest[0] ?? ''}"`);
   }
-  return { command, target, json, quiet, roots, help, version };
+  return { command, target, json, quiet, roots, dest, presets, strategy, help, version };
 }
+
+function resolveTarget(named: string | undefined, cwd: string): string {
+  const value = named ?? cwd;
+  return path.isAbsolute(value) ? value : path.resolve(cwd, value);
+}
+
+function displayRoot(root: string, cwd: string): string {
+  return path.relative(cwd, root) || '.';
+}
+
+// --------------------------------------------------------------------------
+// scan
+// --------------------------------------------------------------------------
 
 interface ScanEnvelope {
   readonly kind: 'scan';
@@ -149,15 +177,14 @@ interface ScanEnvelope {
 
 function renderScanHuman(
   root: string,
-  ir: Awaited<ReturnType<typeof scanRepo>>,
+  ir: HarnessIR,
   findings: readonly Finding[],
   cwd: string,
 ): string {
-  const displayRoot = path.relative(cwd, root) || '.';
   const copyable = ir.skills.filter((skill) => skill.provenance.rootKind !== 'native').length;
   const native = ir.skills.length - copyable;
   const lines = [
-    `dshify scan ${displayRoot} (${ir.harness} adapter ${ir.version})`,
+    `dshify scan ${displayRoot(root, cwd)} (${ir.harness} adapter ${ir.version})`,
     `  skills    ${ir.skills.length} (${copyable} copyable, ${native} native)`,
     `  commands  ${ir.commands.length}`,
     `  personas  ${ir.personas.length}`,
@@ -171,13 +198,8 @@ function renderScanHuman(
   return lines.join('\n');
 }
 
-async function runScan(
-  parsed: ParsedArgs,
-  io: CliIO,
-  cwd: string,
-): Promise<number> {
-  const named = parsed.target ?? cwd;
-  const resolved = path.isAbsolute(named) ? named : path.resolve(cwd, named);
+async function runScan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<number> {
+  const resolved = resolveTarget(parsed.target, cwd);
   const roots = await resolveRoots(resolved);
   const ir = await scanRepo({
     root: roots.scanRoot,
@@ -225,11 +247,126 @@ async function runScan(
   return 0;
 }
 
+// --------------------------------------------------------------------------
+// plan
+// --------------------------------------------------------------------------
+
+interface PlanEnvelope {
+  readonly kind: 'plan';
+  readonly schemaVersion: 1;
+  readonly ok: boolean;
+  readonly root: string;
+  readonly dest: string;
+  readonly harness: { readonly id: string; readonly version: string };
+  readonly findings: readonly Finding[];
+  readonly artifacts: ReadonlyArray<{
+    readonly path: string;
+    readonly kind: string;
+    readonly capability: string;
+    readonly status: 'planned';
+    readonly sources: readonly string[];
+    readonly content: string;
+  }>;
+  readonly summary: {
+    readonly planned: number;
+    readonly losses: number;
+    readonly conflicts: number;
+  };
+}
+
+function renderPlanHuman(
+  root: string,
+  dest: string,
+  ir: HarnessIR,
+  planned: { artifacts: readonly { path: string; kind: string; capability: string }[]; losses: readonly Finding[]; conflicts: readonly { code: string; path: string }[] },
+  cwd: string,
+): string {
+  const width = Math.max(0, ...planned.artifacts.map((artifact) => artifact.path.length));
+  const lines = [
+    `dshify plan ${displayRoot(root, cwd)} (${ir.harness} adapter ${ir.version})`,
+    `  dest      ${dest} (strategy copy)`,
+    '',
+    'Plan',
+  ];
+  for (const artifact of planned.artifacts) {
+    lines.push(`  ${artifact.kind.padEnd(16)} ${artifact.path.padEnd(width)} ${artifact.capability}`);
+  }
+  if (planned.artifacts.length === 0) lines.push('  none');
+  lines.push('', 'Losses');
+  for (const loss of planned.losses) {
+    const where = loss.path === undefined ? '' : ` ${loss.path}`;
+    lines.push(`  ${loss.severity.padEnd(7)} ${loss.code.padEnd(24)}${where}`);
+  }
+  if (planned.losses.length === 0) lines.push('  none');
+  lines.push('', 'Conflicts');
+  if (planned.conflicts.length === 0) lines.push('  none');
+  for (const conflict of planned.conflicts) {
+    lines.push(`  ${conflict.code.padEnd(16)} ${conflict.path}`);
+  }
+  lines.push('', 'Next', `  dshify apply ${displayRoot(root, cwd)}`);
+  return lines.join('\n');
+}
+
+async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<number> {
+  const resolved = resolveTarget(parsed.target, cwd);
+  const roots = await resolveRoots(resolved);
+  const ir = await scanRepo({
+    root: roots.scanRoot,
+    extraRoots: parsed.roots,
+    limits: DEFAULT_SCAN_LIMITS,
+  });
+  const planned = await planRepo(ir, {
+    repoRoot: roots.repoRoot,
+    dest: parsed.dest,
+    presets: parsed.presets,
+    strategy: parsed.strategy,
+    readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
+  });
+  const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
+  const findings = sortFindings([...ir.warnings, ...planned.losses]);
+
+  if (parsed.json) {
+    const envelope: PlanEnvelope = {
+      kind: 'plan',
+      schemaVersion: 1,
+      ok: true,
+      root: ir.root,
+      dest,
+      harness: { id: ir.harness, version: ir.version },
+      findings,
+      artifacts: planned.artifacts.map((artifact) => ({
+        path: artifact.path,
+        kind: artifact.kind,
+        capability: artifact.capability,
+        status: 'planned' as const,
+        sources: artifact.sources.map((source) => repoRelative(roots.repoRoot, source.path)),
+        content: new TextDecoder().decode(artifact.bytes),
+      })),
+      summary: {
+        planned: planned.artifacts.length,
+        losses: planned.losses.length,
+        conflicts: planned.conflicts.length,
+      },
+    };
+    io.out(JSON.stringify(envelope, null, 2));
+    return 0;
+  }
+
+  if (!parsed.quiet) {
+    io.out(renderPlanHuman(ir.root, dest, ir, planned, cwd));
+  }
+  return 0;
+}
+
+// --------------------------------------------------------------------------
+// entry
+// --------------------------------------------------------------------------
+
 /**
  * Run the CLI and return its exit code.
  *
- * `scan` is implemented (spec §5.1); plan/apply/check/verify remain explicit
- * "not implemented yet" so nothing pretends to write.
+ * `scan` and `plan` are implemented (spec §5.1–§5.2); `apply`/`check`/`verify`
+ * remain explicit "not implemented yet" so nothing pretends to write.
  */
 export async function run(
   argv: readonly string[],
@@ -246,11 +383,14 @@ export async function run(
       io.out(HELP);
       return 0;
     }
-    if (parsed.command !== 'scan') {
-      io.err(`dshify ${parsed.command}: not implemented yet (v0.1 spec: docs/spec.md)`);
-      return 1;
+    if (parsed.command === 'scan') {
+      return await runScan(parsed, io, options.cwd ?? process.cwd());
     }
-    return await runScan(parsed, io, options.cwd ?? process.cwd());
+    if (parsed.command === 'plan') {
+      return await runPlan(parsed, io, options.cwd ?? process.cwd());
+    }
+    io.err(`dshify ${parsed.command}: not implemented yet (v0.1 spec: docs/spec.md)`);
+    return 1;
   } catch (error) {
     if (isDshifyError(error)) {
       io.err(`dshify: ${error.message}`);

@@ -52,6 +52,8 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | Command with no single-line `description` or a non-kebab filename | not emitted | `unsupported` | `MALFORMED_COMMAND` (error) |
 | Subagent with no single-line `description` or a non-kebab filename | not emitted | `unsupported` | `MALFORMED_PERSONA` (error) |
 | MCP server name outside `[A-Za-z0-9_-]{1,32}` | skipped | `unsupported` | `MCP_INVALID_NAME` (error) |
+| Resource file unreadable, or larger than the size limit | not copied | `unsupported` | `RESOURCE_READ_FAILED` (error) |
+| MCP server when `--presets` is not given | not emitted; reported as manual | `manual` | `MCP_PRESETS_REQUIRED` (info) |
 
 ## 3. Skills
 
@@ -96,6 +98,8 @@ Placeholder rewriting (deterministic):
 - `$ARGUMENTS` → the sentence above (exactly; no other change).
 - `$1`, `$2`, … → "The first/second/… whitespace-separated part of the argument is `$N`." lines appended after the argument sentence.
 - `` !`cmd` `` → replaced by a fenced block labelled `shell (not executed)`, and `SHELL_INJECTION` is reported. dshify never runs it.
+
+Placement: the prose argument sentence is its own paragraph after the `# /<name>` title (and any routing line); inside the body the literal `$ARGUMENTS` token becomes `the argument`, so no placeholder DSL reaches the model. A command skill always carries `disable-model-invocation: true` and `user-invocable: true`.
 
 Name collisions: reserved DSH host commands are the six shipped built-ins — `plan`, `compact`, `goal`, `permission`, `feedback`, `export` ([spec §7](../spec.md)). A colliding command is emitted as `<name>-command` and reported `HOST_COMMAND_COLLISION`. A collision with another emitted artifact is `NAME_COLLISION`; the later artifact gets a numeric suffix (`-2`).
 

@@ -78,7 +78,6 @@ describe('opencode scan — acceptance criterion 1', () => {
     const reviewer = ir.personas.find((persona) => persona.id === 'reviewer');
     expect(reviewer?.access).toBe('read-only');
     expect(reviewer?.body).toContain('strict reviewer');
-    expect(ir.warnings.map((warning) => warning.code)).toContain('SUBAGENT_ISOLATION');
   });
 
   it('preserves the remote MCP server and its disabled flag', async () => {

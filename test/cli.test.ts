@@ -5,7 +5,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { COMMANDS, run } from '../src/cli.js';
 import { HarnessIRSchema } from '../src/core/ir.js';
 import { VERSION } from '../src/version.js';
-import { capture, fixturePath, repoRoot } from './helpers.js';
+import { capture, fixturePath, repoRoot, treeHash } from './helpers.js';
 
 const cwd = repoRoot();
 const tempDirs: string[] = [];
@@ -68,7 +68,7 @@ describe('cli surface', () => {
   });
 
   it('reports known but unimplemented commands with exit 1', async () => {
-    for (const command of ['plan', 'apply', 'check', 'verify']) {
+    for (const command of ['apply', 'check', 'verify']) {
       const c = capture();
       expect(await run([command], c.io, { cwd })).toBe(1);
       expect(c.err()).toContain('not implemented yet');
@@ -144,5 +144,82 @@ describe('scan command', () => {
     const c = capture();
     expect(await run(['scan', path.join(cwd, 'does-not-exist')], c.io, { cwd })).toBe(2);
     expect(c.err()).toContain('does not exist');
+  });
+});
+
+interface PlanPayload {
+  readonly kind: string;
+  readonly schemaVersion: number;
+  readonly dest: string;
+  readonly findings: ReadonlyArray<{ code: string }>;
+  readonly artifacts: ReadonlyArray<{
+    path: string;
+    kind: string;
+    status: string;
+    sources: readonly string[];
+    content: string;
+  }>;
+  readonly summary: Readonly<Record<string, number>>;
+}
+
+describe('plan command', () => {
+  it('prints a grouped report and writes nothing', async () => {
+    const before = await treeHash(fixturePath('opencode-basic'));
+    const c = capture();
+    expect(await run(['plan', fixturePath('opencode-basic')], c.io, { cwd })).toBe(0);
+    const out = c.out();
+    for (const heading of ['Plan', 'Losses', 'Conflicts', 'Next']) {
+      expect(out, heading).toContain(heading);
+    }
+    expect(out).toContain('.dsh/skills/hello/SKILL.md');
+    expect(out).toContain('ARGS_SUBSTITUTION');
+    expect(await treeHash(fixturePath('opencode-basic'))).toBe(before);
+    expect(c.err()).toBe('');
+  });
+
+  it('prints a schema-shaped JSON envelope', async () => {
+    const c = capture();
+    expect(await run(['plan', fixturePath('opencode-basic'), '--json'], c.io, { cwd })).toBe(0);
+    const payload = JSON.parse(c.out()) as PlanPayload;
+    expect(payload.kind).toBe('plan');
+    expect(payload.schemaVersion).toBe(1);
+    expect(payload.dest).toBe('.dsh');
+    expect(payload.artifacts.map((artifact) => artifact.path)).toContain(
+      '.dsh/skills/hello/SKILL.md',
+    );
+    expect(payload.artifacts.every((artifact) => artifact.status === 'planned')).toBe(true);
+    expect(
+      payload.artifacts.every((artifact) => artifact.sources.every((source) => !path.isAbsolute(source))),
+    ).toBe(true);
+    expect(payload.summary.planned).toBe(5);
+    expect(payload.summary.conflicts).toBe(0);
+    expect(payload.findings.map((item) => item.code)).toContain('ARGS_SUBSTITUTION');
+  });
+
+  it('is byte-identical across two runs', async () => {
+    const first = capture();
+    const second = capture();
+    await run(['plan', fixturePath('opencode-basic'), '--json'], first.io, { cwd });
+    await run(['plan', fixturePath('opencode-basic'), '--json'], second.io, { cwd });
+    expect(first.out()).toBe(second.out());
+  });
+
+  it('refuses --presets and --strategy link with exit 5', async () => {
+    const presets = capture();
+    expect(await run(['plan', fixturePath('opencode-basic'), '--presets'], presets.io, { cwd })).toBe(5);
+    expect(presets.err()).toContain('not implemented yet');
+    const link = capture();
+    expect(
+      await run(['plan', fixturePath('opencode-basic'), '--strategy', 'link'], link.io, { cwd }),
+    ).toBe(5);
+    expect(link.err()).toContain('not implemented yet');
+  });
+
+  it('refuses a destination outside the repository with exit 2', async () => {
+    const c = capture();
+    expect(
+      await run(['plan', fixturePath('opencode-basic'), '--dest', '../outside'], c.io, { cwd }),
+    ).toBe(2);
+    expect(c.err()).toContain('inside the repository');
   });
 });

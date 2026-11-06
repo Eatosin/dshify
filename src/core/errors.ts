@@ -6,7 +6,7 @@
  * maps `exitCode` straight through, so the codes here are part of the public
  * contract in `docs/cli.md`.
  */
-export type DshifyErrorCode = 'USAGE' | 'SCAN_FAILED' | 'INTERNAL';
+export type DshifyErrorCode = 'USAGE' | 'SCAN_FAILED' | 'INTERNAL' | 'UNSUPPORTED';
 
 export class DshifyError extends Error {
   readonly code: DshifyErrorCode;
@@ -29,6 +29,11 @@ export class DshifyError extends Error {
 
   static internal(message: string): DshifyError {
     return new DshifyError('INTERNAL', message, 1);
+  }
+
+  /** An explicitly requested construct this version does not support (exit 5). */
+  static unsupported(message: string): DshifyError {
+    return new DshifyError('UNSUPPORTED', message, 5);
   }
 }
 

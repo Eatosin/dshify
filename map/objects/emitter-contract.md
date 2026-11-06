@@ -5,14 +5,14 @@ title: emitter contract
 description: The target seam — IR to deterministic artifact bytes in memory; never touches the filesystem.
 universe: live
 status: verified
-implementation: ghost
-verified: 2026-11-05 @ 7598ff3
-entity: docs/architecture.md §3.2 (interface); src/emit/dsh/ (ghost)
+implementation: partial
+verified: 2026-11-06 @ 853e4d1
+entity: docs/architecture.md §3.2; src/emit/dsh/skills.ts (skills/commands/personas implemented; preset bundle ghost)
 ---
 
 # emitter contract — the target seam
 
-`TargetEmitter.plan(ir, options) → PlannedOutput`, returning artifact **bytes in memory**. Writing is `apply`'s job alone. Code name `src/emit/dsh/` — **ghost**.
+`TargetEmitter.plan(ir, options) → PlannedOutput`, returning artifact **bytes in memory**. Writing is `apply`'s job alone. `src/emit/dsh/skills.ts` implements it for skills, commands and personas; the `.dsh/harness/` preset bundle is not written yet (`partial`).
 
 ## Why this shape
 
@@ -21,7 +21,7 @@ Bytes in memory are what make golden tests possible without writing anything, an
 ## Shape
 
 - `TargetEmitter`: `id`, `plan(ir, options) → PlannedOutput { artifacts, losses, conflicts }`.
-- `Artifact`: `path` (repo-relative), `kind` (`skill` | `skill-resource` | `bundle-manifest` | `bundle-patch`), `bytes`, `sources: Provenance[]`, `capability`.
+- `Artifact`: `path` (repo-relative), `kind` (`skill` | `command-skill` | `persona-skill` | `skill-resource` | `bundle-manifest` | `bundle-patch`), `bytes`, `sources: Provenance[]`, `capability`.
 - Deterministic order: sorted by destination path, byte-wise, locale-independent.
 - Fixed frontmatter key order and a fixed YAML emitter — never the user's style. No timestamps, absolute paths, usernames, hostnames, or random ids.
 - Destination layout, naming and collision rules are the contract: `docs/spec.md` §7. This card does not copy them.
@@ -37,7 +37,7 @@ Citations: `docs/architecture.md` §3.2, §5; `docs/spec.md` §7.
 
 ## If you change this
 
-- **Hits:** `docs/spec.md` §7 (naming, collisions, frontmatter order), every golden file, determinism and path-leak tests, [`lockfile-write-matrix`](lockfile-write-matrix.md) if artifact `kind`/`path` change, and `src/core/plan.ts` (ghost).
+- **Hits:** `docs/spec.md` §7 (naming, collisions, frontmatter order), `src/emit/dsh/skills.ts`, `src/core/plan.ts`, every golden file under `test/golden/`, `test/plan.test.ts`, determinism and path-leak tests, and [`lockfile-write-matrix`](lockfile-write-matrix.md) if artifact `kind`/`path` change.
 - **Does not hit:** adapter scanning, or `docs/cli.md` unless the summary changes — the wrong next noun is `adapter-contract`.
 
 ## Surfaces
