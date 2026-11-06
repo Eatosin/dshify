@@ -1,8 +1,9 @@
 # dshify v0.1 specification — OpenCode → DeepSeek Harness
 
-- **Status:** Accepted (2026-11-05)
+- **Status:** Accepted (2026-11-05; revised 2026-11-06)
 - **Owner:** maintainer
 - **Supersedes:** none
+- **Revision:** rev. 2 (2026-11-06) — reserved host commands corrected to the six shipped built-ins (§7, §14, Appendix A).
 - **Implementation gate:** cleared — implementation may proceed from this contract. Changes require a spec PR.
 
 ## 1. Problem
@@ -180,7 +181,7 @@ Mapping rules:
 Naming and collision rules (deterministic, all reported):
 
 - A unit keeps its source name unless the name is already taken in the plan or is reserved.
-- Reserved DSH host commands: `plan`, `compact`, `goal`, `permission`. A command that collides is emitted as `<name>-command` (`HOST_COMMAND_COLLISION`, adapted).
+- Reserved DSH host commands are the six shipped built-ins: `plan`, `compact`, `goal`, `permission`, `feedback`, `export`. A command that collides is emitted as `<name>-command` (`HOST_COMMAND_COLLISION`, adapted). The zh spellings resolve as input aliases to these commands, never as separate names.
 - Two personas with the same id: first by adapter order, second gets `<id>-persona` (`NAME_COLLISION`, adapted).
 - Any collision with an existing file under `dest` that dshify does not own is a `NAME_CONFLICT` (blocking in `apply` unless `--force`).
 - Nested skills (`**/SKILL.md` below a root's direct children) are not discovered by DSH: `UNSUPPORTED_NESTED_SKILL` in v0.1. They are reported, skipped, and never flattened silently.
@@ -291,6 +292,8 @@ All seven defaults were accepted by the maintainer on 2026-11-05; implementation
 
 Changing any row requires a spec PR. Finding codes, flag names, and the JSON `schemaVersion` are public API from v0.1.
 
+**Revision 2026-11-06 (rev. 2):** §7's reserved host-command set was corrected from four to the six shipped built-ins (`feedback` and `export` were missing) after checking `@deepseek-ai/dsh-commands@0.2.2-rc.1`. This is the spec PR for that correction; no other decision row changed.
+
 ## Appendix A — DSH discovery facts this spec depends on
 
 | Fact | Source |
@@ -300,7 +303,9 @@ Changing any row requires a spec PR. Finding codes, flag names, and the JSON `sc
 | Frontmatter requires kebab-case `name`, non-empty `description`; `disable-model-invocation` / `user-invocable` must be booleans | same |
 | Model catalog is injected durably; each description is paid for once per session | `@deepseek-ai/dsh-tool-skill` README |
 | `/name` for a user-invocable skill injects the body; a host command with the same name wins | `@deepseek-ai/dsh-client-ui-skill` README |
-| Host commands include `plan`, `compact`, `goal`, `permission` | shipped command packages |
+| Host command set is `goal`, `plan`, `feedback`, `compact`, `permission`, `export` (zh input aliases exist) | `@deepseek-ai/dsh-commands@0.2.2-rc.1` — `lib/types/builtin.js` (`BUILTINS`, `builtinCommandTokens`) |
 | Persona/presets: `@deepseek-ai/dsh-agent-preset` + `@deepseek-ai/dsh-persona`; read-only via `@deepseek-ai/dsh-tool-fs` switches | package READMEs |
 | MCP rows: `@deepseek-ai/dsh-mcp-client`, `serverName` + stdio/streamable-http | package README |
 | `AGENTS.md` / `CLAUDE.md` are loaded as workspace instructions | `@deepseek-ai/dsh-agent-instructions` README |
+
+> Rows sourced from shipped code are cited by package, version and path; they are not README quotes. README-cited rows follow the §8 rule.

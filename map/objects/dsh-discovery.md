@@ -6,7 +6,7 @@ description: The verification noun — simulate what a DSH session would catalog
 universe: live
 status: verified
 implementation: ghost
-verified: 2026-11-05 @ 7598ff3
+verified: 2026-11-06 @ 344d97b
 entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts (ghost)
 ---
 
@@ -18,7 +18,7 @@ The rules a DSH session uses to find skills, reimplemented offline so `check` ca
 
 Static simulation is the only verification that works offline, in CI, on every platform, without launching a harness — and it is the layer that catches the product's signature failure: an artifact that exists but is invisible. It must mirror *documented* behaviour, so each rule cites the shipped README it derives from; a DSH change then becomes a visible maintenance task instead of a silent regression. One rule is load-bearing at the card level: **discovery is one level deep** — only direct children are bundles, and nested skill trees are deliberately ignored.
 
-**Known drift (2026-11-05).** The spec reserves four host commands; shipped `@deepseek-ai/dsh-commands` 0.2.2-rc.1 declares six — it adds `feedback` and `export` (with zh spellings). A source command named `feedback` or `export` would lose its `/name` to the host command. This needs a spec PR; it is recorded here so the collision rule is not implemented against a stale list, and it is the reason a checked fact register (`docs/dsh-facts/`, P2) exists.
+**Resolved 2026-11-06 (spec rev. 2).** Shipped `@deepseek-ai/dsh-commands` 0.2.2-rc.1 declares six host commands; the spec previously reserved four, missing `feedback` and `export`. Spec rev. 2 corrected §7/§14/Appendix A, so the collision rule is implemented against the shipped set. This is the drift a checked fact register (`docs/dsh-facts/`, P2) exists to catch before a coding step hardens a stale list.
 
 Citations: `docs/spec.md` §7 (reserved commands), §8, Appendix A; `@deepseek-ai/dsh-skill-filesystem` README at 0.2.2-rc.1; `@deepseek-ai/dsh-commands` `lib/types/builtin.js` at 0.2.2-rc.1.
 
