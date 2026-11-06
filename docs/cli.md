@@ -88,6 +88,8 @@ All `--json` output is one object with a discriminator, a `schemaVersion`, and `
 
 `apply` reports one `status` per artifact: `written`, `updated`, `unchanged`, `repaired`, `forced`, `conflict`, `name-conflict`, `orphan`. Its finding codes are `REPAIRED`, `UPDATED`, `FORCED`, `CONFLICT`, `NAME_CONFLICT` and `ORPHAN_ARTIFACT`; a run with any conflict or orphan exits 3.
 
+`check` reports `unchanged`, `drift`, `conflict`, `missing` or `orphan` per artifact, and adds `verification: { roots, visible, skipped, complete }` to the envelope. It exits 4 on `MISSING_ARTIFACT` or `DISCOVERY_MISS`, and 3 on `DRIFT`, `CONFLICT`, `LOCKFILE_MISSING` or `ORPHAN_ARTIFACT`. `verify` reports the discovered catalog only and exits 4 when a root could not be read.
+
 ## Examples (target behavior for v0.1)
 
 ```bash

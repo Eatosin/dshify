@@ -182,6 +182,15 @@ describe('plan — misses', () => {
     expect(planned.conflicts).toEqual([]);
   });
 
+  it('leaks no absolute path or timestamp into artifact bytes', async () => {
+    const planned = await planFixture();
+    for (const artifact of planned.artifacts) {
+      const text = textOf(artifact.bytes);
+      expect(text.includes(repo), artifact.path).toBe(false);
+      expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+    }
+  });
+
   it('keeps loss paths repo-relative', async () => {
     const planned = await planFixture();
     for (const loss of planned.losses) {

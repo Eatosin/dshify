@@ -6,13 +6,13 @@ description: The only public interface — stable JSON, stable exit codes, stdou
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-06 @ 5095f29
-entity: docs/cli.md (contract); src/cli.ts (scan/plan/apply implemented; check/verify not)
+verified: 2026-11-06 @ aa30e42
+entity: docs/cli.md (contract); src/cli.ts (all five commands implemented; presets/live-probe flags refuse)
 ---
 
 # CLI and JSON envelope — the public interface
 
-`dshify <command> [path] [flags]`, one JSON object under `--json`, exit codes `0`–`5`. Contract: `docs/cli.md`. `scan`, `plan` and `apply` are implemented (human output + one `--json` envelope each); `check`/`verify` still return `1` "not implemented yet" (`partial`).
+`dshify <command> [path] [flags]`, one JSON object under `--json`, exit codes `0`–`5`. Contract: `docs/cli.md`. `scan`, `plan`, `apply`, `check` and `verify` are implemented (human output + one `--json` envelope each); `--presets` and `--verify-live` still refuse with exit 5 (`partial` until those land).
 
 ## Why this shape
 
