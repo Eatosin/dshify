@@ -92,7 +92,7 @@ Placeholder rewriting (deterministic):
 - `$1`, `$2`, … → "The first/second/… whitespace-separated part of the argument is `$N`." lines appended after the argument sentence.
 - `` !`cmd` `` → replaced by a fenced block labelled `shell (not executed)`, and `SHELL_INJECTION` is reported. dshify never runs it.
 
-Name collisions: reserved DSH host commands are `plan`, `compact`, `goal`, `permission`. A colliding command is emitted as `<name>-command` and reported `HOST_COMMAND_COLLISION`. A collision with another emitted artifact is `NAME_COLLISION`; the later artifact gets a numeric suffix (`-2`).
+Name collisions: reserved DSH host commands are the six shipped built-ins — `plan`, `compact`, `goal`, `permission`, `feedback`, `export` ([spec §7](../spec.md)). A colliding command is emitted as `<name>-command` and reported `HOST_COMMAND_COLLISION`. A collision with another emitted artifact is `NAME_COLLISION`; the later artifact gets a numeric suffix (`-2`).
 
 Routing: if `agent` names a subagent that is also being converted, the skill opens with "Start by loading the `<agent>` skill." If it names something unknown (e.g. OpenCode's built-in `build`), the field is dropped and `COMMAND_AGENT_ROUTING` warns. `subagent: true` with no `agent` is reported and dropped.
 
