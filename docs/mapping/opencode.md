@@ -48,12 +48,17 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | `CLAUDE.md` | untouched (DSH loads it as workspace instructions) | `exact` | `CLAUDE_MD_SHARED` (info) |
 | OpenCode plugin / custom tools | nothing (never executed) | `unsupported` | `PLUGIN_UNSUPPORTED` (warning) |
 | Unknown `opencode.json` / frontmatter keys | ignored, listed | `unsupported` | `UNKNOWN_FIELD` (warning) |
+| Malformed or unreadable `opencode.json` | scan continues with defaults | `unsupported` | `MALFORMED_CONFIG` (error) |
+| Command with no single-line `description` or a non-kebab filename | not emitted | `unsupported` | `MALFORMED_COMMAND` (error) |
+| Subagent with no single-line `description` or a non-kebab filename | not emitted | `unsupported` | `MALFORMED_PERSONA` (error) |
+| MCP server name outside `[A-Za-z0-9_-]{1,32}` | skipped | `unsupported` | `MCP_INVALID_NAME` (error) |
 
 ## 3. Skills
 
 Scan rules:
 
 - Roots, in order: `.opencode/skills` (default), every entry of `opencode.json` `skills[]` in listed order, then `.agents/skills` (default). Duplicate roots are deduplicated by `realpath`.
+- `--root <dir>` (repeatable) is additive: extra roots are scanned after the configured roots and before `.agents/skills`. A root resolved to `.agents/skills` is `native` regardless of how it was declared.
 - A root's **direct children** are candidates: `<dir>/SKILL.md` (directory bundle) or `<dir>.md` (flat file).
 - Frontmatter must be a YAML mapping with `name` (kebab-case) and `description` (single line). `name` must equal the directory name; a mismatch is `MALFORMED_SKILL` with a rename suggestion, not an automatic rename.
 - `.agents/skills` is emitted nothing: DSH already scans it at rank 200. If a `.agents` skill's `name` does not match its directory, report `MALFORMED_SKILL` because DSH would skip it too.

@@ -2,7 +2,7 @@
 
 How `dshify` is put together, and why each seam exists.
 
-> **Status: as-planned for v0.1.** Only `src/cli.ts`, `src/index.ts` and `src/version.ts` exist today; module-level live/ghost status and change impact live in [`map/AGENTS.md`](../map/AGENTS.md). Keep this page for the design rationale (§4) — the map cites it and never restates it.
+> **Status: partly built.** `scan` is implemented end to end; `plan`/`apply`/`check`/`verify`, `src/emit/` and `src/verify/` are still planned. Module-level live/ghost status and change impact live in [`map/AGENTS.md`](../map/AGENTS.md). Keep this page for the design rationale (§4) — the map cites it and never restates it.
 
 ## 1. Shape
 
@@ -29,6 +29,10 @@ The CLI is a thin shell. Everything testable lives behind pure-ish functions tha
 |---|---|---|
 | `src/cli.ts` | parse argv, select command, render output, map findings to exit codes | stdout/stderr, process exit |
 | `src/core/ir.ts` | zod schemas + types for IR, artifacts, findings | none |
+| `src/core/adapter.ts` | `HarnessAdapter`/`ScanInput` seam and scan limits | none |
+| `src/core/frontmatter.ts` | markdown frontmatter parsing and the strict boolean grammar | read |
+| `src/core/source.ts` | bounded read-only source reads, hashing, default limits | read |
+| `src/core/errors.ts` | typed usage/infrastructure failure and exit codes | none |
 | `src/core/scan.ts` | adapter dispatch, root resolution, hashing, limits | read |
 | `src/core/plan.ts` | collision rules, emission paths, capability/loss computation, prior-lockfile conflict detection | read |
 | `src/core/apply.ts` | write matrix, atomic writes, symlink/path guards, lockfile write | write into dest + lockfile |

@@ -2,7 +2,7 @@
 
 Port an existing agent-harness setup to **DeepSeek Harness (DSH)** — with verification, owned writes, and an honest loss report. Not a `sed` script.
 
-> **Status: pre-alpha.** The v0.1 spec is accepted (2026-11-05) and implementation is in progress. The CLI skeleton exists; no adapter is implemented yet. Do not run it against a repo you cannot restore from git.
+> **Status: pre-alpha.** The v0.1 spec is accepted (2026-11-05; rev. 2). `dshify scan` is implemented for OpenCode V2 and prints a schema-valid IR; `plan`, `apply`, `check` and `verify` are not implemented yet, so `scan` is the only command that does anything today. Do not run it against a repo you cannot restore from git.
 
 ## The problem
 

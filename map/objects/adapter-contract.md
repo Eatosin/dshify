@@ -5,14 +5,14 @@ title: adapter contract
 description: The source-harness seam — one directory per harness, scan reads and reports, never throws on user content.
 universe: live
 status: verified
-implementation: ghost
-verified: 2026-11-05 @ 7598ff3
-entity: docs/architecture.md §3.1 (interface); src/adapters/opencode/ (ghost)
+implementation: partial
+verified: 2026-11-06 @ e97da0f
+entity: docs/architecture.md §3.1; src/core/adapter.ts + src/adapters/opencode/ (OpenCode scan implemented)
 ---
 
 # adapter contract — the source-harness seam
 
-One directory per harness under `src/adapters/<harness>/`, implementing `HarnessAdapter.scan(input) → HarnessIR`. Today only `src/adapters/opencode/` is planned; **ghost**.
+One directory per harness under `src/adapters/<harness>/`, implementing `HarnessAdapter.scan(input) → HarnessIR`. `src/core/adapter.ts` defines the seam and `src/adapters/opencode/` implements it for OpenCode V2; the other harnesses are specified, not written (`partial`).
 
 ## Why this shape
 
@@ -37,7 +37,7 @@ Citations: `docs/architecture.md` §3.1; `docs/spec.md` §5.1.
 
 ## If you change this
 
-- **Hits:** `docs/spec.md` §5.1, `docs/mapping/opencode.md`, the harness's fixture record under `fixtures/`, adapter snapshot tests, `src/core/scan.ts` (ghost), and [`ir`](ir.md) if new facts are needed.
+- **Hits:** `docs/spec.md` §5.1, `docs/mapping/opencode.md`, `src/core/adapter.ts`, `src/adapters/opencode/scan.ts`, the harness's fixture record under `fixtures/`, `test/opencode-scan.test.ts`, and [`ir`](ir.md) if new facts are needed.
 - **Does not hit:** `docs/cli.md`, `src/emit/`, the discovery rules — the wrong next noun is `cli-json-envelope`.
 
 ## Surfaces
