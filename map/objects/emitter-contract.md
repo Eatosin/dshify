@@ -6,7 +6,7 @@ description: The target seam — IR to deterministic artifact bytes in memory; n
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-06 @ 853e4d1
+verified: 2026-11-06 @ 5095f29
 entity: docs/architecture.md §3.2; src/emit/dsh/skills.ts (skills/commands/personas implemented; preset bundle ghost)
 ---
 

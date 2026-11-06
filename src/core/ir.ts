@@ -195,6 +195,14 @@ export const HarnessIRSchema = z
     personas: z.array(PersonaSchema),
     mcpServers: z.array(McpServerSchema),
     agentsMd: ProvenanceSchema.optional(),
+    /** Existing skill roots that were scanned (absolute); for the lockfile. */
+    roots: z
+      .array(
+        z
+          .object({ path: z.string().min(1), kind: SourceRootKindSchema })
+          .strict(),
+      )
+      .optional(),
     /** Scan-time findings; plan adds the loss/conflict report. */
     warnings: z.array(FindingSchema),
   })

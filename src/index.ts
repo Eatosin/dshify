@@ -27,6 +27,30 @@ export type {
   Skill,
   SourceRootKind,
 } from './core/ir.js';
+export { applyRepo } from './core/apply.js';
+export type {
+  ApplyArtifactResult,
+  ApplyOptions,
+  ApplyResult,
+  ApplyStatus,
+} from './core/apply.js';
+export {
+  DshifyLockfileSchema,
+  LOCKFILE_NAME,
+  LOCKFILE_VERSION,
+  canonicalLockfile,
+  lockfileContentEqual,
+  parseLockfile,
+  readLockfile,
+  serializeLockfile,
+} from './core/lockfile.js';
+export type {
+  DshifyLockfile,
+  LockArtifact,
+  LockLoss,
+  LockSourceRef,
+  LockSourceRoot,
+} from './core/lockfile.js';
 export { planRepo, resolveDest } from './core/plan.js';
 export type { PlanOptions } from './core/plan.js';
 export { DEFAULT_SEVERITY, FINDING_CODES, finding, sortFindings } from './core/report.js';

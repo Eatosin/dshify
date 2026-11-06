@@ -50,6 +50,14 @@ export const FINDING_CODES = {
   HOST_COMMAND_COLLISION: 'HOST_COMMAND_COLLISION',
   MCP_PRESETS_REQUIRED: 'MCP_PRESETS_REQUIRED',
   RESOURCE_READ_FAILED: 'RESOURCE_READ_FAILED',
+
+  // apply / lockfile
+  REPAIRED: 'REPAIRED',
+  UPDATED: 'UPDATED',
+  FORCED: 'FORCED',
+  CONFLICT: 'CONFLICT',
+  ORPHAN_ARTIFACT: 'ORPHAN_ARTIFACT',
+  NAME_CONFLICT: 'NAME_CONFLICT',
 } as const;
 
 export type FindingCode = keyof typeof FINDING_CODES;
@@ -91,6 +99,13 @@ export const DEFAULT_SEVERITY: Readonly<Record<FindingCode, Severity>> = {
   HOST_COMMAND_COLLISION: 'info',
   MCP_PRESETS_REQUIRED: 'info',
   RESOURCE_READ_FAILED: 'error',
+
+  REPAIRED: 'info',
+  UPDATED: 'info',
+  FORCED: 'warning',
+  CONFLICT: 'warning',
+  ORPHAN_ARTIFACT: 'warning',
+  NAME_CONFLICT: 'warning',
 };
 
 export interface FindingInput {

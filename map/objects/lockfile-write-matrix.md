@@ -5,14 +5,14 @@ title: lockfile and write matrix
 description: The ownership record and the per-artifact write decision — the whole conflict strategy.
 universe: live
 status: verified
-implementation: ghost
-verified: 2026-11-05 @ 7598ff3
-entity: docs/spec.md §9 (contract); src/core/lockfile.ts + src/core/apply.ts (ghost)
+implementation: partial
+verified: 2026-11-06 @ 5095f29
+entity: docs/spec.md §9 (contract); src/core/lockfile.ts + src/core/apply.ts (implemented for apply; check drift comparison still ghost)
 ---
 
 # lockfile and write matrix — who owns which file
 
-`.dshify.lock.json` at the repo root records what dshify wrote and from which source bytes; the write matrix decides one action per artifact on every `apply`. Contract: `docs/spec.md` §9. Code names `src/core/lockfile.ts`, `src/core/apply.ts` — **ghost**.
+`.dshify.lock.json` at the repo root records what dshify wrote and from which source bytes; the write matrix decides one action per artifact on every `apply`. Contract: `docs/spec.md` §9. `src/core/lockfile.ts` and `src/core/apply.ts` implement it for `apply` (write matrix, atomic writes, ownership, orphan retention); `check`'s drift comparison is still ghost (`partial`).
 
 ## Why this shape
 
@@ -36,7 +36,7 @@ Citations: `docs/spec.md` §5.3, §9, §11.
 
 ## If you change this
 
-- **Hits:** `docs/spec.md` §9 and §5.3 (spec PR first), the `apply` write matrix, the `check` drift comparison, idempotency/conflict/force/repair tests, and the committed example lockfile in the golden output.
+- **Hits:** `docs/spec.md` §9 and §5.3 (spec PR first), `src/core/lockfile.ts`, `src/core/apply.ts`, `test/apply.test.ts`, `test/lockfile.test.ts`, the committed golden lockfile, and the `check` drift comparison (ghost).
 - **Does not hit:** adapters, or the emitter's byte production — the bytes are the input to this decision, not part of it. The wrong next noun is `emitter-contract`.
 
 ## Surfaces
