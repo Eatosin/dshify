@@ -26,7 +26,28 @@ Every harness says it is "markdown-native", then disagrees about everything else
 
 Detailed exit criteria: [docs/roadmap.md](docs/roadmap.md).
 
-## Planned CLI (v0.1)
+## Quickstart
+
+Not published yet — build the checkout, then point the CLI at an OpenCode repo:
+
+```bash
+npm install && npm run build
+alias dshify="node $PWD/dist/cli.js"
+
+cd /path/to/your/opencode-repo
+dshify scan .     # inventory the source harness; writes nothing
+dshify plan .     # artifacts, findings and losses; writes nothing
+dshify apply .    # writes .dsh/ and .dshify.lock.json (the only writer)
+dshify check .    # CI gate: exits 3 on drift/conflict, 4 on invisible artifacts
+git add .dsh .dshify.lock.json && git commit -m "chore: add the DSH surface"
+
+# optional: persona presets and MCP rows
+dshify apply . --presets
+```
+
+`apply` never deletes user files and refuses to overwrite anything it does not own: a human edit is reported as a conflict, not clobbered. Full contract: [docs/cli.md](docs/cli.md).
+
+## CLI (v0.1)
 
 ```text
 dshify scan  [path]   inventory the source harness, write nothing

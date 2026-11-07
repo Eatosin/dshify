@@ -167,6 +167,13 @@ describe('opencode scan — malformed and missing input', () => {
     );
     const ir = await scanRepo({ root, extraRoots: [], limits });
     expect(ir.skills.map((skill) => skill.id)).not.toContain('nested');
+    expect(
+      ir.warnings.some(
+        (warning) =>
+          warning.code === 'UNSUPPORTED_NESTED_SKILL' &&
+          warning.path?.includes('nested/SKILL.md') === true,
+      ),
+    ).toBe(true);
   });
 
   it('reports plugin surfaces without reading them', async () => {
