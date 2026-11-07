@@ -2,7 +2,17 @@
 
 Port an existing agent-harness setup to **DeepSeek Harness (DSH)** — with verification, owned writes, and an honest loss report. Not a `sed` script.
 
-> **Status: pre-alpha.** The v0.1 spec is accepted (2026-11-05; rev. 2). All five commands are implemented for OpenCode V2: `scan` prints a schema-valid IR, `plan` prints the artifact/loss report with deterministic bytes, `apply` writes the owned `.dsh/` tree plus `.dshify.lock.json` (idempotent, conflicts preserved), `check` fails on drift, conflict, missing artifacts or an invisible emitted skill, and `--presets` emits the `.dsh/harness/` bundle with persona and MCP rows. `--verify-live` is not implemented yet. Do not run it against a repo you cannot restore from git.
+> **Status: v0.1.0.** OpenCode V2 → DSH, verified. All five commands, `--presets`, and the checked discovery simulation are implemented; `--strategy link` and `--verify-live` are not. Do not run it against a repo you cannot restore from git.
+
+## Install
+
+```bash
+npm install -g dshify
+# or without installing:
+npx dshify --help
+```
+
+Requires Node >= 22.12. The core is offline: `scan`/`plan`/`apply`/`check` make no network calls and send no telemetry.
 
 ## The problem
 
@@ -28,12 +38,9 @@ Detailed exit criteria: [docs/roadmap.md](docs/roadmap.md).
 
 ## Quickstart
 
-Not published yet — build the checkout, then point the CLI at an OpenCode repo:
+Point the CLI at an OpenCode repo; every command is dry-run except `apply`:
 
 ```bash
-npm install && npm run build
-alias dshify="node $PWD/dist/cli.js"
-
 cd /path/to/your/opencode-repo
 dshify scan .     # inventory the source harness; writes nothing
 dshify plan .     # artifacts, findings and losses; writes nothing
@@ -46,6 +53,8 @@ dshify apply . --presets
 ```
 
 `apply` never deletes user files and refuses to overwrite anything it does not own: a human edit is reported as a conflict, not clobbered. Full contract: [docs/cli.md](docs/cli.md).
+
+Working from source instead? `npm install && npm run build`, then `alias dshify="node $PWD/dist/cli.js"`.
 
 ## CLI (v0.1)
 
