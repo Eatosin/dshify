@@ -6,7 +6,7 @@ description: The verification noun — simulate what a DSH session would catalog
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-06 @ aa30e42
+verified: 2026-11-07 @ 1b799e1
 entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts (implemented; live probe and fact register pending)
 ---
 

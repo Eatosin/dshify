@@ -30,7 +30,7 @@ dshify <command> [path] [flags]
 | `--dest <dir>` | `.dsh` | Destination tree, repo-relative; must stay inside the repo. |
 | `--lockfile <path>` | `.dshify.lock.json` | Lockfile path, repo-relative. |
 | `--strategy <mode>` | `copy` | `copy` or `link` for skills outside `.agents/skills`. |
-| `--presets` | off | Also emit `.dsh/harness/` preset bundle from personas. |
+| `--presets` | off | Also emit `.dsh/harness/` (manifest + `cordis.patch.yml` with persona and MCP rows). |
 | `--force` | off | Overwrite conflicting artifacts (reports `FORCED`). |
 | `--verify-live` | off | Experimental: probe the local `dsh` binary with a temp `DSH_HOME`. |
 | `--no-color` | auto | Disable ANSI (also honors `NO_COLOR`). |

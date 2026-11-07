@@ -6,7 +6,7 @@ description: The narrow waist — adapters produce it, emitters consume it, the 
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-06 @ aa30e42
+verified: 2026-11-07 @ 1b799e1
 entity: docs/spec.md §6 (contract); src/core/ir.ts (schema implemented)
 ---
 

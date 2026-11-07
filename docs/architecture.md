@@ -2,7 +2,7 @@
 
 How `dshify` is put together, and why each seam exists.
 
-> **Status: implemented for OpenCode V2.** All five commands work end to end and `src/verify/discovery.ts` enforces discovery in `check`. Still open: `--presets`, `--verify-live`, a checked DSH fact register (`docs/dsh-facts/`) and nested-skill reporting. Module-level live/ghost status and change impact live in [`map/AGENTS.md`](../map/AGENTS.md). Keep this page for the design rationale (§4) — the map cites it and never restates it.
+> **Status: implemented for OpenCode V2.** All five commands and the `--presets` bundle work end to end, and `src/verify/discovery.ts` enforces discovery in `check`. Still open: `--verify-live`, a checked DSH fact register (`docs/dsh-facts/`) and nested-skill reporting. Module-level live/ghost status and change impact live in [`map/AGENTS.md`](../map/AGENTS.md). Keep this page for the design rationale (§4) — the map cites it and never restates it.
 
 ## 1. Shape
 

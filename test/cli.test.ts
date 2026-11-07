@@ -197,10 +197,10 @@ describe('plan command', () => {
     expect(first.out()).toBe(second.out());
   });
 
-  it('refuses --presets and --strategy link with exit 5', async () => {
+  it('emits the preset bundle and still refuses --strategy link with exit 5', async () => {
     const presets = capture();
-    expect(await run(['plan', fixturePath('opencode-basic'), '--presets'], presets.io, { cwd })).toBe(5);
-    expect(presets.err()).toContain('not implemented yet');
+    expect(await run(['plan', fixturePath('opencode-basic'), '--presets'], presets.io, { cwd })).toBe(0);
+    expect(presets.out()).toContain('cordis.patch.yml');
     const link = capture();
     expect(
       await run(['plan', fixturePath('opencode-basic'), '--strategy', 'link'], link.io, { cwd }),

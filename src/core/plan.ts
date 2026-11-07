@@ -3,6 +3,7 @@ import type { Conflict, HarnessIR, PlannedOutput } from './ir.js';
 import { DshifyError } from './errors.js';
 import { isInside, repoRelative } from './paths.js';
 import { finding, sortFindings } from './report.js';
+import { planDshBundle } from '../emit/dsh/bundle.js';
 import { planDshSkills } from '../emit/dsh/skills.js';
 
 /**
@@ -18,12 +19,14 @@ export interface PlanOptions {
   readonly repoRoot: string;
   /** Destination tree, repo-relative (`dest`) or absolute. Default `.dsh`. */
   readonly dest: string;
-  /** Emit the `.dsh/harness/` preset bundle. Not implemented yet. */
+  /** Emit the `.dsh/harness/` preset bundle (persona + MCP rows). */
   readonly presets: boolean;
   /** `copy` (portable) or `link` (opt-in, not implemented yet). */
   readonly strategy: 'copy' | 'link';
   /** Reads a referenced resource file; keeps the emitter filesystem-free. */
   readonly readResource: (absolute: string) => Promise<Uint8Array>;
+  /** Bundle manifest version; defaults to `0.0.0` for library callers. */
+  readonly version?: string;
 }
 
 /** Resolve and validate the destination tree inside the repository. */
@@ -43,11 +46,6 @@ export function resolveDest(repoRoot: string, dest: string): string {
 }
 
 export async function planRepo(ir: HarnessIR, options: PlanOptions): Promise<PlannedOutput> {
-  if (options.presets) {
-    throw DshifyError.unsupported(
-      '--presets is not implemented yet (the .dsh/harness bundle lands with apply)',
-    );
-  }
   if (options.strategy === 'link') {
     throw DshifyError.unsupported(
       '--strategy link is not implemented yet; the default copy strategy is portable',
@@ -61,20 +59,32 @@ export async function planRepo(ir: HarnessIR, options: PlanOptions): Promise<Pla
     readResource: options.readResource,
   });
 
+  const artifacts = [...emitted.artifacts];
   const losses = [...emitted.losses];
-  for (const server of ir.mcpServers) {
-    losses.push(
-      finding(
-        'MCP_PRESETS_REQUIRED',
-        `MCP server "${server.name}" is not emitted: MCP rows require the --presets bundle, which is not implemented yet`,
-        { path: 'opencode.json', capability: 'manual' },
-      ),
-    );
+
+  if (options.presets) {
+    const bundle = planDshBundle(ir, {
+      dest,
+      version: options.version ?? '0.0.0',
+    });
+    artifacts.push(...bundle.artifacts);
+    losses.push(...bundle.losses);
+  } else {
+    for (const server of ir.mcpServers) {
+      losses.push(
+        finding(
+          'MCP_PRESETS_REQUIRED',
+          `MCP server "${server.name}" is not emitted without --presets`,
+          { path: 'opencode.json', capability: 'manual' },
+        ),
+      );
+    }
   }
 
+  artifacts.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   const conflicts: Conflict[] = [];
   return {
-    artifacts: emitted.artifacts,
+    artifacts,
     losses: sortFindings(losses),
     conflicts,
   };
