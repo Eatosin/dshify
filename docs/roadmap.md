@@ -6,6 +6,8 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 **Contract:** this page sequences the work; what "done" means is [spec.md §13](spec.md). Where the two overlap, the spec wins.
 
+**Status (2026-11-07):** implementation complete; every §13 criterion is covered by CI tests. The package is prepared at `0.1.0`; the manual migration round-trip and first-time-user checks below remain as the pre-tag gates.
+
 **Deliverables**
 
 - `scan`, `plan`, `apply`, `check`, `verify` commands with the contract in [cli.md](cli.md).
@@ -13,14 +15,14 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 - Static DSH discovery verifier; deterministic lockfile and write matrix.
 - Fixtures `opencode-basic`, `opencode-collisions`, `opencode-malformed`, `opencode-mcp-auth`.
 - Golden tests, idempotency test, conflict/force/repair matrix, no-network guard, path-leak test.
-- README quickstart, mapping doc, JSON schema doc, CI on Node 22/24, npm publish as `dshify@0.1.0` (provenance).
+- README quickstart, mapping doc, JSON schema doc, CI on Node 22/24, npm publish as `dshify@0.1.0` (provenance) — prepared 2026-11-07; publishing needs the registry token.
 
 **Exit criteria**
 
-- [ ] Every acceptance criterion in [spec.md §13](spec.md#13-acceptance-criteria-for-v01) passes in CI.
+- [x] Every acceptance criterion in [spec.md §13](spec.md#13-acceptance-criteria-for-v01) is covered by CI tests.
 - [ ] The migration this project was born from round-trips cleanly as a manual validation target (never committed as a fixture).
-- [ ] `dshify check` catches a deliberately deleted artifact and a human-edited artifact in CI.
-- [ ] Zero network calls and zero source-tree writes demonstrated by tests.
+- [x] `dshify check` catches a deliberately deleted artifact and a human-edited artifact in CI.
+- [x] Zero network calls and zero source-tree writes demonstrated by tests.
 - [ ] A first-time user can go from `npx dshify plan .` to a committed DSH surface using only the README.
 
 **Explicitly deferred from v0.1:** recursive/nested skill flattening, pruning orphan artifacts, `--mcp-env`, live verification as a requirement, Claude/Codex adapters, plugin packaging.

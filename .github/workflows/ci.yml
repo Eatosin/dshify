@@ -26,6 +26,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # The published tarball contains dist + docs the CLI needs; never ship the repo.
+      - run: npm pack --dry-run
 
   docs:
     name: docs workspace
