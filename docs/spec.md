@@ -1,9 +1,10 @@
 # dshify v0.1 specification — OpenCode → DeepSeek Harness
 
-- **Status:** Accepted (2026-11-05; revised 2026-11-06)
+- **Status:** Accepted (2026-11-05; revised 2026-11-07)
 - **Owner:** maintainer
 - **Supersedes:** none
 - **Revision:** rev. 2 (2026-11-06) — reserved host commands corrected to the six shipped built-ins (§7, §14, Appendix A).
+- **Revision:** rev. 3 (2026-11-07) — command-skill body layout and `$ARGUMENTS` replacement pinned; nested-skill code fixed as `UNSUPPORTED_NESTED_SKILL` (§7, §14).
 - **Implementation gate:** cleared — implementation may proceed from this contract. Changes require a spec PR.
 
 ## 1. Problem
@@ -178,13 +179,24 @@ Mapping rules:
 | `AGENTS.md` | not touched | exact | DSH loads it natively |
 | Plugin / custom tools | nothing | unsupported | report `PLUGIN_UNSUPPORTED`; never execute |
 
+Command skill bodies (deterministic, so goldens pin them):
+
+1. A `# /<name>` heading.
+2. When `agent:` / `subagent:` names a persona that is also being converted, the routing line `Start by loading the \`<id>\` skill.`
+3. When the source uses `$ARGUMENTS` or `$N`, the argument paragraph: `The text you type after the \`/<name>\` token is this command's argument.` followed by `If it is empty, ask for it before proceeding.`
+4. `$N` placeholders are additionally documented as one prose line per index, after the argument paragraph.
+5. The source body, with `$ARGUMENTS` replaced by `the argument` and each shell injection replaced by a fenced `shell (not executed)` block. No placeholder token reaches the model.
+6. Command frontmatter always carries `disable-model-invocation: true` and `user-invocable: true`.
+
+Findings: `ARGS_SUBSTITUTION`, `POSITIONAL_ARGS`, `SHELL_INJECTION`; unknown routing targets report `COMMAND_AGENT_ROUTING`.
+
 Naming and collision rules (deterministic, all reported):
 
 - A unit keeps its source name unless the name is already taken in the plan or is reserved.
 - Reserved DSH host commands are the six shipped built-ins: `plan`, `compact`, `goal`, `permission`, `feedback`, `export`. A command that collides is emitted as `<name>-command` (`HOST_COMMAND_COLLISION`, adapted). The zh spellings resolve as input aliases to these commands, never as separate names.
 - Two personas with the same id: first by adapter order, second gets `<id>-persona` (`NAME_COLLISION`, adapted).
 - Any collision with an existing file under `dest` that dshify does not own is a `NAME_CONFLICT` (blocking in `apply` unless `--force`).
-- Nested skills (`**/SKILL.md` below a root's direct children) are not discovered by DSH: `UNSUPPORTED_NESTED_SKILL` in v0.1. They are reported, skipped, and never flattened silently.
+- Nested skills (`**/SKILL.md` below a root's direct children) are not discovered by DSH: `UNSUPPORTED_NESTED_SKILL` in v0.1. They are reported, skipped, and never flattened silently. That code is the only spelling; the mapping doc uses no alias.
 
 Skill-root strategy:
 
@@ -293,6 +305,8 @@ All seven defaults were accepted by the maintainer on 2026-11-05; implementation
 Changing any row requires a spec PR. Finding codes, flag names, and the JSON `schemaVersion` are public API from v0.1.
 
 **Revision 2026-11-06 (rev. 2):** §7's reserved host-command set was corrected from four to the six shipped built-ins (`feedback` and `export` were missing) after checking `@deepseek-ai/dsh-commands@0.2.2-rc.1`. This is the spec PR for that correction; no other decision row changed.
+
+**Revision 2026-11-07 (rev. 3):** §7 now states the command-skill body layout explicitly (the argument sentence is its own paragraph; `$ARGUMENTS` becomes `the argument`) and fixes the nested-skill code as `UNSUPPORTED_NESTED_SKILL`, resolving the `NESTED_SKILL` alias in the mapping doc. Behaviour already implemented in v0.1 was pinned; no decision row changed.
 
 ## Appendix A — DSH discovery facts this spec depends on
 

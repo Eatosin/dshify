@@ -27,7 +27,7 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | Skill under `.agents/skills` | nothing emitted | `exact` | `DSH_NATIVE_ROOT` (info) |
 | Skill resources referenced by body | copied beside the skill | `exact` | — |
 | Skill with missing `description` | not emitted | `unsupported` | `MALFORMED_SKILL` (error) |
-| Nested `SKILL.md` below a root's direct children | not emitted | `unsupported` | `NESTED_SKILL` (warning) |
+| Nested `SKILL.md` below a root's direct children | not emitted | `unsupported` | `UNSUPPORTED_NESTED_SKILL` (warning) |
 | Slash command | user-invocable skill (`<id>/SKILL.md`, `disable-model-invocation: true`) | `adapted` | — |
 | `$ARGUMENTS` in a command | prose sentence naming the text after the token | `adapted` | `ARGS_SUBSTITUTION` (info) |
 | `$1`, `$2` positional args | prose sentence listing expected positional values | `adapted` | `POSITIONAL_ARGS` (info) |
@@ -99,7 +99,7 @@ Placeholder rewriting (deterministic):
 - `$1`, `$2`, … → "The first/second/… whitespace-separated part of the argument is `$N`." lines appended after the argument sentence.
 - `` !`cmd` `` → replaced by a fenced block labelled `shell (not executed)`, and `SHELL_INJECTION` is reported. dshify never runs it.
 
-Placement: the prose argument sentence is its own paragraph after the `# /<name>` title (and any routing line); inside the body the literal `$ARGUMENTS` token becomes `the argument`, so no placeholder DSL reaches the model. A command skill always carries `disable-model-invocation: true` and `user-invocable: true`.
+Placement (spec §7): the prose argument sentence is its own paragraph after the `# /<name>` title (and any routing line); inside the body the literal `$ARGUMENTS` token becomes `the argument`, so no placeholder DSL reaches the model. A command skill always carries `disable-model-invocation: true` and `user-invocable: true`.
 
 Name collisions: reserved DSH host commands are the six shipped built-ins — `plan`, `compact`, `goal`, `permission`, `feedback`, `export` ([spec §7](../spec.md)). A colliding command is emitted as `<name>-command` and reported `HOST_COMMAND_COLLISION`. A collision with another emitted artifact is `NAME_COLLISION`; the later artifact gets a numeric suffix (`-2`).
 
