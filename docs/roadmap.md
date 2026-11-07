@@ -15,7 +15,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 - Static DSH discovery verifier; deterministic lockfile and write matrix.
 - Fixtures `opencode-basic`, `opencode-collisions`, `opencode-malformed`, `opencode-mcp-auth`.
 - Golden tests, idempotency test, conflict/force/repair matrix, no-network guard, path-leak test.
-- README quickstart, mapping doc, JSON schema doc, CI on Node 22/24, npm publish as `dshify@0.1.0` (provenance) — prepared 2026-11-07; publishing needs the registry token.
+- README quickstart, mapping doc, JSON schema doc, CI on Node 22/24, npm publish as `@eatosin/dshify@0.1.0` (provenance). Unscoped `dshify` is blocked by npm's similarity policy (too similar to `tsify`), so the scope is the supported name; the command remains `dshify`.
 
 **Exit criteria**
 
@@ -23,7 +23,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 - [ ] The migration this project was born from round-trips cleanly as a manual validation target (never committed as a fixture).
 - [x] `dshify check` catches a deliberately deleted artifact and a human-edited artifact in CI.
 - [x] Zero network calls and zero source-tree writes demonstrated by tests.
-- [ ] A first-time user can go from `npx dshify plan .` to a committed DSH surface using only the README.
+- [ ] A first-time user can go from `npx @eatosin/dshify plan .` to a committed DSH surface using only the README.
 
 **Explicitly deferred from v0.1:** recursive/nested skill flattening, pruning orphan artifacts, `--mcp-env`, live verification as a requirement, Claude/Codex adapters, plugin packaging.
 

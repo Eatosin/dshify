@@ -1,5 +1,5 @@
 {
-  "name": "dshify",
+  "name": "@eatosin/dshify",
   "version": "0.1.0",
   "description": "Port agent harness surfaces to DeepSeek Harness with verification. OpenCode first.",
   "keywords": [

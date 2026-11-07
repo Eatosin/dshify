@@ -7,12 +7,12 @@ Port an existing agent-harness setup to **DeepSeek Harness (DSH)** — with veri
 ## Install
 
 ```bash
-npm install -g dshify
+npm install -g @eatosin/dshify
 # or without installing:
-npx dshify --help
+npx @eatosin/dshify --help
 ```
 
-Requires Node >= 22.12. The core is offline: `scan`/`plan`/`apply`/`check` make no network calls and send no telemetry.
+The package is scoped (`@eatosin/dshify`) because npm's name-similarity policy reserves the unscoped `dshify`; the installed command is still `dshify`. Requires Node >= 22.12. The core is offline: `scan`/`plan`/`apply`/`check` make no network calls and send no telemetry.
 
 ## The problem
 
