@@ -31,5 +31,6 @@ First release: **OpenCode V2 → DSH**, verified.
 
 ### Notes
 
+- Published as **`@eatosin/dshify`**; npm's name-similarity policy reserves the unscoped `dshify` (it flagged it as too similar to `tsify`). The installed command is `dshify`.
 - Node >= 22.12; runtime dependencies are `yaml` and `zod` only. The core is offline.
 - `--json` `schemaVersion` and finding codes are stable within the `0.x` line.
