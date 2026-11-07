@@ -3,3 +3,6 @@
 
 - [Fixtures](README.md)
 - [opencode-basic](opencode-basic/CONTEXT.md) - Happy-path OpenCode V2 repo — two copyable skills, one native .agents skill, one command, one read-only persona, one disabled remote MCP server. (verified)
+- [opencode-collisions](opencode-collisions/CONTEXT.md) - Naming collisions — a host command, a skill/command/persona id clash, and an unknown frontmatter key. (verified)
+- [opencode-malformed](opencode-malformed/CONTEXT.md) - Unparseable and missing sources — malformed skills, commands, personas and a missing configured root. (verified)
+- [opencode-mcp-auth](opencode-mcp-auth/CONTEXT.md) - Auth-bearing MCP servers — OAuth, env-interpolated headers, a disabled stdio server and an invalid name. (verified)

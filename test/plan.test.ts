@@ -242,9 +242,17 @@ describe('plan — guarantees', () => {
     await expect(planOf(ir, { dest: '.' })).rejects.toMatchObject({ exitCode: 2 });
   });
 
-  it('refuses the not-yet-implemented presets and link strategies with exit 5', async () => {
+  it('emits the preset bundle when --presets is given', async () => {
     const ir = await scanFixture();
-    await expect(planOf(ir, { presets: true })).rejects.toMatchObject({ exitCode: 5 });
+    const planned = await planOf(ir, { presets: true });
+    expect(planned.artifacts.map((artifact) => artifact.path)).toContain(
+      '.dsh/harness/cordis.patch.yml',
+    );
+    expect(planned.losses.some((loss) => loss.code === 'MCP_PRESETS_REQUIRED')).toBe(false);
+  });
+
+  it('still refuses --strategy link with exit 5', async () => {
+    const ir = await scanFixture();
     await expect(planOf(ir, { strategy: 'link' })).rejects.toMatchObject({ exitCode: 5 });
   });
 });

@@ -119,7 +119,7 @@
     {
       "code": "MCP_PRESETS_REQUIRED",
       "severity": "info",
-      "detail": "MCP server \"demo-remote\" is not emitted: MCP rows require the --presets bundle, which is not implemented yet"
+      "detail": "MCP server \"demo-remote\" is not emitted without --presets"
     },
     {
       "code": "SUBAGENT_ISOLATION",

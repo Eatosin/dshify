@@ -6,7 +6,7 @@ description: The ownership record and the per-artifact write decision — the wh
 universe: live
 status: verified
 implementation: live
-verified: 2026-11-06 @ aa30e42
+verified: 2026-11-07 @ 1b799e1
 entity: docs/spec.md §9 (contract); src/core/lockfile.ts + src/core/apply.ts + src/core/check.ts (write matrix and drift comparison implemented)
 ---
 

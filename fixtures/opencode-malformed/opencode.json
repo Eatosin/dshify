@@ -1,0 +1,5 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "example/fixture-model",
+  "skills": ["skills", "missing-root"]
+}

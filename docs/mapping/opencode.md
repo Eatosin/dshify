@@ -117,6 +117,7 @@ Emission with `--presets`: additionally `.dsh/harness/cordis.patch.yml` with one
 - persona body as `@deepseek-ai/dsh-persona` `prefix`.
 - tool groups mirror DSH's shipped `standard` preset: `dsh-agent-instructions`, `dsh-time-context`, `dsh-tool-bash` (disabled on win32), `dsh-tool-fs`, `dsh-tool-fs-search`, `dsh-tool-todo`, `dsh-tool-web`, `dsh-tool-ask-user`, `dsh-skill-filesystem`, `dsh-tool-skill`, the compaction group, and the delegation group.
 - read-only personas: `tool-fs: { read: true, write: false, edit: false, applyPatch: false }`.
+- every persona preset also carries the converted MCP rows (§6) inside its `plugins`, so the agent can call them.
 - Never installs the bundle; the report prints the `plugin_manager install_bundle` target.
 
 `mode: primary`/missing `mode` on an agent file: OpenCode treats it as a session-level agent, not a subagent. dshify still converts it to a persona but reports `AGENT_MODE_UNEXPECTED` (warning) because the user may have intended a session preset.
@@ -134,6 +135,7 @@ Emission with `--presets`: additionally `.dsh/harness/cordis.patch.yml` with one
 - Any auth construct (`oauth`, `headers.Authorization`, `{env:VAR}` values, `env` containing a secret-looking key) makes the row `disabled: true` and reports `MCP_AUTH_MANUAL` with the key name and a redacted value. dshify never writes a secret into the patch; the user configures auth and flips `disabled`.
 - `{env:VAR}` without a secret-looking name is emitted as a `!!js process.env.VAR` expression only with `--mcp-env` (v0.2); v0.1 reports it as manual.
 - Server names are normalized to DSH's `[A-Za-z0-9_-]{1,32}`; invalid names are reported and skipped.
+- Rows are nested inside each persona preset's `plugins`. With `--presets` and no converted persona there is nothing to attach them to, so they are reported as `MCP_PRESETS_REQUIRED` and nothing is emitted.
 
 ## 7. Include files
 

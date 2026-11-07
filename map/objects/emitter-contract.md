@@ -5,14 +5,14 @@ title: emitter contract
 description: The target seam — IR to deterministic artifact bytes in memory; never touches the filesystem.
 universe: live
 status: verified
-implementation: partial
-verified: 2026-11-06 @ aa30e42
-entity: docs/architecture.md §3.2; src/emit/dsh/skills.ts (skills/commands/personas implemented; preset bundle ghost)
+implementation: live
+verified: 2026-11-07 @ 1b799e1
+entity: docs/architecture.md §3.2; src/emit/dsh/skills.ts + src/emit/dsh/bundle.ts (skills and preset bundle implemented)
 ---
 
 # emitter contract — the target seam
 
-`TargetEmitter.plan(ir, options) → PlannedOutput`, returning artifact **bytes in memory**. Writing is `apply`'s job alone. `src/emit/dsh/skills.ts` implements it for skills, commands and personas; the `.dsh/harness/` preset bundle is not written yet (`partial`).
+`TargetEmitter.plan(ir, options) → PlannedOutput`, returning artifact **bytes in memory**. Writing is `apply`'s job alone. `src/emit/dsh/skills.ts` emits the skill surface and `src/emit/dsh/bundle.ts` the `--presets` harness bundle (manifest + Cordis patch with persona and MCP rows) — `live` for v0.1.
 
 ## Why this shape
 
@@ -37,7 +37,7 @@ Citations: `docs/architecture.md` §3.2, §5; `docs/spec.md` §7.
 
 ## If you change this
 
-- **Hits:** `docs/spec.md` §7 (naming, collisions, frontmatter order), `src/emit/dsh/skills.ts`, `src/core/plan.ts`, every golden file under `test/golden/`, `test/plan.test.ts`, determinism and path-leak tests, and [`lockfile-write-matrix`](lockfile-write-matrix.md) if artifact `kind`/`path` change.
+- **Hits:** `docs/spec.md` §7 (naming, collisions, frontmatter order), `src/emit/dsh/skills.ts`, `src/emit/dsh/bundle.ts`, `src/core/plan.ts`, every golden file under `test/golden/`, `test/plan.test.ts`, `test/bundle.test.ts`, determinism and path-leak tests, and [`lockfile-write-matrix`](lockfile-write-matrix.md) if artifact `kind`/`path` change.
 - **Does not hit:** adapter scanning, or `docs/cli.md` unless the summary changes — the wrong next noun is `adapter-contract`.
 
 ## Surfaces

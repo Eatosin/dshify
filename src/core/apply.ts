@@ -184,6 +184,7 @@ export async function applyRepo(ir: HarnessIR, options: ApplyOptions): Promise<A
     presets: options.presets,
     strategy: options.strategy,
     readResource: options.readResource,
+    version: options.version,
   });
 
   const destRel = resolveDest(options.repoRoot, options.dest);

@@ -2,7 +2,7 @@
 
 Port an existing agent-harness setup to **DeepSeek Harness (DSH)** — with verification, owned writes, and an honest loss report. Not a `sed` script.
 
-> **Status: pre-alpha.** The v0.1 spec is accepted (2026-11-05; rev. 2). All five commands are implemented for OpenCode V2: `scan` prints a schema-valid IR, `plan` prints the artifact/loss report with deterministic bytes, `apply` writes the owned `.dsh/` tree plus `.dshify.lock.json` (idempotent, conflicts preserved), and `check` fails on drift, conflict, missing artifacts or an invisible emitted skill. `--presets` and `--verify-live` are not implemented yet. Do not run it against a repo you cannot restore from git.
+> **Status: pre-alpha.** The v0.1 spec is accepted (2026-11-05; rev. 2). All five commands are implemented for OpenCode V2: `scan` prints a schema-valid IR, `plan` prints the artifact/loss report with deterministic bytes, `apply` writes the owned `.dsh/` tree plus `.dshify.lock.json` (idempotent, conflicts preserved), `check` fails on drift, conflict, missing artifacts or an invisible emitted skill, and `--presets` emits the `.dsh/harness/` bundle with persona and MCP rows. `--verify-live` is not implemented yet. Do not run it against a repo you cannot restore from git.
 
 ## The problem
 

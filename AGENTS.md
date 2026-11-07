@@ -44,4 +44,4 @@ Each line is the rule; the detail lives where it links.
 
 ## Status
 
-All five commands are implemented: scan produces a schema-valid IR, plan computes deterministic artifact bytes plus the loss report without writing, apply is the only writer (atomic, idempotent, conflict-preserving, lockfile last), and check/verify enforce the static DSH discovery simulation. `--presets` and `--verify-live` are not implemented yet. Per-module live/ghost status is in [`map/objects/_index.md`](map/objects/_index.md); trust it over any prose that describes a module as existing.
+All five commands and `--presets` are implemented: scan produces a schema-valid IR, plan computes deterministic artifact bytes plus the loss report without writing, apply is the only writer (atomic, idempotent, conflict-preserving, lockfile last), check/verify enforce the static DSH discovery simulation, and presets emit the harness bundle. `--verify-live` is not implemented yet. Per-module live/ghost status is in [`map/objects/_index.md`](map/objects/_index.md); trust it over any prose that describes a module as existing.

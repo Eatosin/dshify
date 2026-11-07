@@ -335,6 +335,7 @@ async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
     presets: parsed.presets,
     strategy: parsed.strategy,
     readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
+    version: VERSION,
   });
   const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
   const findings = sortFindings([...ir.warnings, ...planned.losses]);
@@ -630,6 +631,7 @@ async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     strategy: parsed.strategy,
     readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
     limits: DEFAULT_SCAN_LIMITS,
+    version: VERSION,
   });
   const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
   const sourcesByPath = new Map(
