@@ -55,7 +55,8 @@ else:
         fail.append(f"AGENTS.md is {n} lines (limit 60): move payload to a shelf")
 
 # 2 — every working folder states its own contract.
-for d in ["map", "map/objects", "map/effects", "docs", "fixtures"]:
+for d in ["map", "map/objects", "map/effects", "docs", "docs/dsh-facts",
+          "docs/dsh-facts/facts", "fixtures"]:
     if not (ROOT / d / "CONTEXT.md").exists():
         fail.append(f"{d}/CONTEXT.md missing")
 
@@ -96,7 +97,8 @@ for p in cards:
         warn.append(f"{rel}: ~{len(text)//4} tokens — split the card")
 
 # 4 — every contract cites the spec rather than restating it.
-for d in ["map", "map/objects", "map/effects", "docs", "fixtures"]:
+for d in ["map", "map/objects", "map/effects", "docs", "docs/dsh-facts",
+          "docs/dsh-facts/facts", "fixtures"]:
     f = ROOT / d / "CONTEXT.md"
     if f.exists() and "spec.md" not in read(f):
         fail.append(f"{d}/CONTEXT.md does not cite docs/spec.md")
@@ -105,9 +107,10 @@ for d in ["map", "map/objects", "map/effects", "docs", "fixtures"]:
 if (ROOT / "map/processes").is_dir():
     if not list((ROOT / "map/processes").glob("*.md")):
         fail.append("map/processes/ exists but is empty — delete it until a verb is real")
-for idx in ["map/objects/_index.md", "fixtures/_index.md"]:
+for idx in ["map/objects/_index.md", "fixtures/_index.md",
+            "docs/dsh-facts/facts/_index.md"]:
     if not (ROOT / idx).exists():
-        fail.append(f"{idx} missing — run `python3 -I _tools/index.py map/objects fixtures`")
+        fail.append(f"{idx} missing — run `python3 -I _tools/index.py map/objects fixtures docs/dsh-facts/facts`")
 
 # 6 — fixture records have contracts, and declared goldens exist.
 records = sorted(d for d in (ROOT / "fixtures").iterdir()
@@ -130,6 +133,26 @@ for p in cards:
     if re.search(r"^\|\s*`?[0-5]`?\s*\|", read(p), re.M):
         warn.append(f"{p.relative_to(ROOT).as_posix()}: looks like a copied exit-code table — cite cli.md")
 
+# 8 — fact notes pin a source digest and carry a verbatim quote.
+facts_dir = ROOT / "docs/dsh-facts/facts"
+fact_notes = sorted(p for p in facts_dir.glob("*.md")
+                    if p.name not in ("_index.md", "CONTEXT.md")) if facts_dir.is_dir() else []
+for p in fact_notes:
+    text = read(p)
+    rel = p.relative_to(ROOT).as_posix()
+    fm = front(text)
+    if fm.get("type") != "fact":
+        fail.append(f"{rel}: type {fm.get('type')!r}, expected 'fact'")
+    for key in ("title", "description", "package", "version", "source", "sha256", "spec"):
+        if not fm.get(key):
+            fail.append(f"{rel}: fact missing `{key}`")
+    if not re.fullmatch(r"[0-9a-f]{64}", fm.get("sha256", "")):
+        fail.append(f"{rel}: fact sha256 is not 64 lowercase hex")
+    if "spec.md" not in fm.get("spec", ""):
+        fail.append(f"{rel}: fact does not cite docs/spec.md")
+    if not any(line.startswith("> ") for line in text.splitlines()):
+        fail.append(f"{rel}: fact has no verbatim quote")
+
 # --- report ---------------------------------------------------------------
 def count(key, val):
     return sum(1 for p in cards if front(read(p)).get(key) == val)
@@ -149,6 +172,7 @@ if impl_ghost:
 print(f"  fixtures   {len(records)} record(s), contracts "
       f"{sum((d/'CONTEXT.md').exists() for d in records)}/{len(records)}")
 print(f"  stubs      {len(stubs)}" + (f" ({', '.join(p.stem for p in stubs)})" if stubs else ""))
+print(f"  facts      {len(fact_notes)} note(s)")
 for w in warn:
     print(f"  WARN {w}")
 for f in fail:

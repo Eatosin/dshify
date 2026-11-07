@@ -20,6 +20,7 @@ The docs are not one unit. Load the row, not the folder.
 | implement or review the scan stage | `spec.md` §5.1, §6; `mapping/opencode.md` §1–§3 | `architecture.md` §4, `roadmap.md` |
 | implement or review plan/apply | `spec.md` §5.2–§5.3, §7, §9 | the adapter mapping |
 | implement or review check/verify | `spec.md` §8, Appendix A; `cli.md` exit codes | `roadmap.md` |
+| verify or update a DSH discovery fact | `spec.md` §8, Appendix A; `dsh-facts/CONTEXT.md` | `dsh-facts/facts/` |
 | change a finding code or loss severity | `mapping/opencode.md` §2, §10; `spec.md` §10 | `cli.md` |
 | change flags, exit codes, or JSON | `cli.md`; `spec.md` §10, §14 | the IR sketch |
 | add a source harness (v0.2+) | `spec.md` §6; `architecture.md` §3, §7 | `mapping/opencode.md` |

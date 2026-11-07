@@ -55,6 +55,7 @@ describe('fixture — opencode-malformed', () => {
     expect(codes).toContain('MALFORMED_COMMAND');
     expect(codes).toContain('MALFORMED_PERSONA');
     expect(codes).toContain('MISSING_ROOT');
+    expect(codes).toContain('UNSUPPORTED_NESTED_SKILL');
     expect(ir.skills.some((skill) => skill.id === 'nested')).toBe(false);
 
     const planned = await planOf(ir);

@@ -61,6 +61,7 @@ Scan rules:
 
 - Roots, in order: `.opencode/skills` (default), every entry of `opencode.json` `skills[]` in listed order, then `.agents/skills` (default). Duplicate roots are deduplicated by `realpath`.
 - `--root <dir>` (repeatable) is additive: extra roots are scanned after the configured roots and before `.agents/skills`. A root resolved to `.agents/skills` is `native` regardless of how it was declared.
+- Scan reports every nested `SKILL.md` below a root's direct child as `UNSUPPORTED_NESTED_SKILL` (warning) and never emits it; symlinks and dot-directories are not walked.
 - A root's **direct children** are candidates: `<dir>/SKILL.md` (directory bundle) or `<dir>.md` (flat file).
 - Frontmatter must be a YAML mapping with `name` (kebab-case) and `description` (single line). `name` must equal the directory name; a mismatch is `MALFORMED_SKILL` with a rename suggestion, not an automatic rename.
 - `.agents/skills` is emitted nothing: DSH already scans it at rank 200. If a `.agents` skill's `name` does not match its directory, report `MALFORMED_SKILL` because DSH would skip it too.

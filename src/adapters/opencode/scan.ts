@@ -468,11 +468,53 @@ async function addSkill(args: SkillFileArgs): Promise<void> {
   });
 }
 
+interface WalkBudget {
+  count: number;
+}
+
+/**
+ * Find nested SKILL.md files below a root's direct child. Bounded depth and entry count;
+ * symlinks and dot-directories are skipped. Never throws for user content.
+ */
+async function findNestedSkillFiles(
+  dirAbs: string,
+  skipAbs: string | undefined,
+  input: ScanInput,
+  budget: WalkBudget,
+): Promise<string[]> {
+  const found: string[] = [];
+  const walk = async (dir: string, depth: number): Promise<void> => {
+    if (depth > 8 || budget.count >= input.limits.maxItems) return;
+    let entries: Dirent[];
+    try {
+      entries = await listDirect(dir);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      checkAbort(input);
+      if (entry.name.startsWith('.') || budget.count >= input.limits.maxItems) continue;
+      if (entry.isSymbolicLink()) continue;
+      const absolute = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(absolute, depth + 1);
+      } else if (entry.isFile() && entry.name === 'SKILL.md' && absolute !== skipAbs) {
+        found.push(absolute);
+        budget.count += 1;
+      }
+    }
+  };
+  await walk(dirAbs, 0);
+  return found;
+}
+
 async function scanSkillRoot(
   root: SkillRoot,
   input: ScanInput,
   out: Skill[],
   warnings: Finding[],
+  nestedSeen: Set<string>,
+  budget: WalkBudget,
 ): Promise<void> {
   const entries = await listDirect(root.abs);
   for (const entry of entries) {
@@ -481,16 +523,36 @@ async function scanSkillRoot(
     const absolute = path.join(root.abs, entry.name);
     if (entry.isDirectory()) {
       const file = path.join(absolute, 'SKILL.md');
-      if (!(await isFile(file))) continue;
-      await addSkill({
-        file,
-        baseDir: absolute,
-        expectedName: entry.name,
-        root,
+      const hasBundle = await isFile(file);
+      if (hasBundle) {
+        await addSkill({
+          file,
+          baseDir: absolute,
+          expectedName: entry.name,
+          root,
+          input,
+          out,
+          warnings,
+        });
+      }
+      const nestedFiles = await findNestedSkillFiles(
+        absolute,
+        hasBundle ? file : undefined,
         input,
-        out,
-        warnings,
-      });
+        budget,
+      );
+      for (const nestedFile of nestedFiles) {
+        const nestedRelative = repoRelative(input.root, nestedFile);
+        if (nestedSeen.has(nestedRelative)) continue;
+        nestedSeen.add(nestedRelative);
+        warnings.push(
+          finding(
+            'UNSUPPORTED_NESTED_SKILL',
+            'nested SKILL.md is not discovered by DSH; reported and skipped',
+            { path: nestedRelative, capability: 'unsupported' },
+          ),
+        );
+      }
     } else if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
       await addSkill({
         file: absolute,
@@ -1003,8 +1065,10 @@ export async function scanOpencode(input: ScanInput): Promise<HarnessIR> {
 
   const config = await readConfig(input, warnings);
   const roots = await collectSkillRoots(input, config, warnings);
+  const nestedSeen = new Set<string>();
+  const walkBudget: WalkBudget = { count: 0 };
   for (const root of roots) {
-    await scanSkillRoot(root, input, skills, warnings);
+    await scanSkillRoot(root, input, skills, warnings, nestedSeen, walkBudget);
     assertItemBudget('skills', skills.length, input);
   }
 

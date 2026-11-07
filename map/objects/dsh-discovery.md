@@ -6,17 +6,17 @@ description: The verification noun — simulate what a DSH session would catalog
 universe: live
 status: verified
 implementation: partial
-verified: 2026-11-07 @ 1b799e1
-entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts (implemented; live probe and fact register pending)
+verified: 2026-11-07 @ f33e8d7
+entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts (implemented; live probe remains); docs/dsh-facts (checked facts)
 ---
 
 # DSH discovery — what a session would actually catalog
 
-The rules a DSH session uses to find skills, reimplemented offline so `check` can prove an emitted skill is visible. Contract: `docs/spec.md` §8 — the roots, ranks and frontmatter grammar are recorded there (Appendix A) and are not repeated here. `src/verify/discovery.ts` implements the simulation for the two project roots and `check` consumes it (`partial`: live probe and checked fact register remain).
+The rules a DSH session uses to find skills, reimplemented offline so `check` can prove an emitted skill is visible. Contract: `docs/spec.md` §8 — the roots, ranks and frontmatter grammar are recorded there (Appendix A) and are not repeated here. `src/verify/discovery.ts` implements the simulation for the two project roots and `check` consumes it; the shipped quotes behind each rule are pinned in [`docs/dsh-facts/`](../../docs/dsh-facts/CONTEXT.md) (`partial`: the opt-in live probe remains).
 
 ## Why this shape
 
-Static simulation is the only verification that works offline, in CI, on every platform, without launching a harness — and it is the layer that catches the product's signature failure: an artifact that exists but is invisible. It must mirror *documented* behaviour, so each rule cites the shipped README it derives from; a DSH change then becomes a visible maintenance task instead of a silent regression. One rule is load-bearing at the card level: **discovery is one level deep** — only direct children are bundles, and nested skill trees are deliberately ignored.
+Static simulation is the only verification that works offline, in CI, on every platform, without launching a harness — and it is the layer that catches the product's signature failure: an artifact that exists but is invisible. It must mirror *documented* behaviour, so each rule cites the shipped README it derives from, and those quotes are pinned in `docs/dsh-facts/`; a DSH change then becomes a visible maintenance task instead of a silent regression. One rule is load-bearing at the card level: **discovery is one level deep** — only direct children are bundles, and nested skill trees are deliberately ignored.
 
 **Resolved 2026-11-06 (spec rev. 2).** Shipped `@deepseek-ai/dsh-commands` 0.2.2-rc.1 declares six host commands; the spec previously reserved four, missing `feedback` and `export`. Spec rev. 2 corrected §7/§14/Appendix A, so the collision rule is implemented against the shipped set. This is the drift a checked fact register (`docs/dsh-facts/`, P2) exists to catch before a coding step hardens a stale list.
 
@@ -54,4 +54,5 @@ Citations: `docs/spec.md` §7 (reserved commands), §8, Appendix A; `@deepseek-a
 
 - Contract: [`docs/spec.md`](../../docs/spec.md) §8 and Appendix A
 - Design check: [`docs/architecture.md`](../../docs/architecture.md) §3.3
+- Checked facts: [`docs/dsh-facts/CONTEXT.md`](../../docs/dsh-facts/CONTEXT.md)
 - Converted-skill rules: [`docs/mapping/opencode.md`](../../docs/mapping/opencode.md) §3
