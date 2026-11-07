@@ -35,6 +35,27 @@ jobs:
             exit 1
           fi
       - name: Publish with provenance
-        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        shell: bash
+        run: |
+          set -o pipefail
+          # npm's Sigstore/Rekor step can report a transient 409
+          # (TLOG_CREATE_ENTRY_ERROR: "an equivalent entry already exists")
+          # when Rekor is slow and the client retries its own first attempt.
+          # A fresh publish process normally succeeds; retry only that error.
+          for attempt in 1 2 3; do
+            echo "publish attempt $attempt"
+            if npm publish --provenance --access public 2>&1 | tee /tmp/publish.log; then
+              exit 0
+            fi
+            if grep -qE 'TLOG_CREATE_ENTRY_ERROR|equivalent entry already exists' /tmp/publish.log; then
+              echo "transient transparency-log conflict; retrying in 20s"
+              sleep 20
+              continue
+            fi
+            echo "non-transient publish failure"
+            exit 1
+          done
+          echo "publish failed after 3 attempts"
+          exit 1
