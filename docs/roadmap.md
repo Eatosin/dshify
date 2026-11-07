@@ -6,7 +6,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 **Contract:** this page sequences the work; what "done" means is [spec.md §13](spec.md). Where the two overlap, the spec wins.
 
-**Status (2026-11-07):** implementation complete; every §13 criterion is covered by CI tests. The package is prepared at `0.1.0`; the manual migration round-trip and first-time-user checks below remain as the pre-tag gates.
+**Status (2026-11-07):** implementation complete; every §13 criterion is covered by CI tests. Published as [`@eatosin/dshify@0.1.0`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance from tag `v0.1.0`; the manual migration round-trip and first-time-user checks below remain as validation follow-ups.
 
 **Deliverables**
 
