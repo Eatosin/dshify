@@ -2,6 +2,19 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.1.2] — 2026-11-08
+
+### Changed
+
+- The README now uses clear technical English. It has a demonstration, real output
+  examples, a "what it does not do" section, and a FAQ.
+- The npm package ships `docs/assets/demo.gif`, so the README demonstration shows
+  on the npm page.
+
+### Notes
+
+- Documentation only. No CLI, IR, lockfile, or finding-code change.
+
 ## [0.1.1] — 2026-11-08
 
 ### Changed
