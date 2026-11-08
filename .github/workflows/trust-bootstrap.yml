@@ -1,0 +1,31 @@
+name: trust-bootstrap
+
+# One-shot: configure npm Trusted Publishing for @eatosin/dshify using the
+# existing bootstrap NPM_TOKEN, since the interactive npm session expired.
+# Deleted after the trusted publisher is configured and verified.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Configure trusted publisher (GitHub Actions)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm trust github @eatosin/dshify \
+            --file publish.yml \
+            --repo Eatosin/dshify \
+            --allow-publish -y
+      - name: Show trusted publishers
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm trust list @eatosin/dshify
