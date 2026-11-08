@@ -1,8 +1,9 @@
 name: publish
 
-# Release path: push a v* tag (or run manually). Requires the NPM_TOKEN repo
-# secret: a Granular Access Token with "Read and write" + "All packages" and
-# 2FA bypass enabled. Provenance needs the public repository and id-token.
+# Release path: push a v* tag (or run manually). Publishing uses npm Trusted
+# Publishing: the GitHub OIDC token (id-token: write) is exchanged for publish
+# rights, so no npm token secret is involved. Configure the trusted publisher
+# on npmjs.com for this repository and the publish.yml workflow filename.
 on:
   push:
     tags: ['v*']
