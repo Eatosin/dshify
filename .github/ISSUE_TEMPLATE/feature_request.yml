@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a capability or an adapter.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        State the problem first. The contract is `docs/spec.md`; behavior changes
+        need a spec PR before code.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What cannot you do today? Which harness, surface, or workflow?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should dshify do? Include the loss or capability class if you know it.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues and the roadmap.
+          required: true
