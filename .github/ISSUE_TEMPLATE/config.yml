@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/Eatosin/dshify/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue.
+  - name: Contract and docs
+    url: https://github.com/Eatosin/dshify/blob/main/docs/spec.md
+    about: Read the spec, CLI contract, and roadmap before a behavior request.

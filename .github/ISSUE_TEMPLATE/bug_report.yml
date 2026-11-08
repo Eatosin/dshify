@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a defect in dshify.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste secrets. Redact tokens, credentials, and private paths.
+        Security issues go through the security policy, not this form.
+  - type: input
+    id: version
+    attributes:
+      label: dshify version
+      description: Output of `dshify --version`.
+      placeholder: 0.1.1
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system and Node version.
+      placeholder: Ubuntu 24.04, Node 24.22.0
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and output
+      description: The command you ran and the full output. Use `--json` if useful.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues.
+          required: true
+        - label: I removed secrets from the report.
+          required: true
