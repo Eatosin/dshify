@@ -2,6 +2,17 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.1.1] — 2026-11-08
+
+### Changed
+
+- Releases publish through npm **Trusted Publishing** (GitHub Actions OIDC); the
+  bootstrap `NPM_TOKEN` is retired. Provenance is still SLSA v1.
+
+### Notes
+
+- No CLI, IR, lockfile or finding-code change.
+
 ## [0.1.0] — 2026-11-07
 
 First release: **OpenCode V2 → DSH**, verified.

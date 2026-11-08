@@ -21,7 +21,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
@@ -35,8 +34,8 @@ jobs:
             exit 1
           fi
       - name: Publish with provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Trusted Publishing: npm exchanges the GitHub OIDC token for publish
+        # rights; no NPM_TOKEN secret is involved.
         shell: bash
         run: |
           set -o pipefail
