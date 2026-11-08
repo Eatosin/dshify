@@ -6,7 +6,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 **Contract:** this page sequences the work; what "done" means is [spec.md §13](spec.md). Where the two overlap, the spec wins.
 
-**Status (2026-11-07):** implementation complete; every §13 criterion is covered by CI tests. Published as [`@eatosin/dshify@0.1.0`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance from tag `v0.1.0`; the manual migration round-trip and first-time-user checks below remain as validation follow-ups.
+**Status (2026-11-07):** implementation complete; every §13 criterion is covered by CI tests. Published as [`@eatosin/dshify@0.1.0`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance from tag `v0.1.0`; the first-time-user check is verified, the manual migration round-trip remains. Release tooling follow-up: move publishing to npm Trusted Publishing and retire the bootstrap token.
 
 **Deliverables**
 
@@ -23,7 +23,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 - [ ] The migration this project was born from round-trips cleanly as a manual validation target (never committed as a fixture).
 - [x] `dshify check` catches a deliberately deleted artifact and a human-edited artifact in CI.
 - [x] Zero network calls and zero source-tree writes demonstrated by tests.
-- [ ] A first-time user can go from `npx @eatosin/dshify plan .` to a committed DSH surface using only the README.
+- [x] A first-time user can go from `npx @eatosin/dshify plan .` to a committed DSH surface using only the README. *(Verified 2026-11-08 by walking the published `0.1.0` package through install → scan → plan → apply → check → commit on a fresh repo.)*
 
 **Explicitly deferred from v0.1:** recursive/nested skill flattening, pruning orphan artifacts, `--mcp-env`, live verification as a requirement, Claude/Codex adapters, plugin packaging.
 

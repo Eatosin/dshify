@@ -1,5 +1,7 @@
 # dshify
 
+[![npm](https://img.shields.io/npm/v/@eatosin/dshify.svg)](https://www.npmjs.com/package/@eatosin/dshify)
+
 Port an existing agent-harness setup to **DeepSeek Harness (DSH)** — with verification, owned writes, and an honest loss report. Not a `sed` script.
 
 > **Status: v0.1.0** — published as [`@eatosin/dshify`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance. OpenCode V2 → DSH, verified. All five commands, `--presets`, and the checked discovery simulation are implemented; `--strategy link` and `--verify-live` are not. Do not run it against a repo you cannot restore from git.
