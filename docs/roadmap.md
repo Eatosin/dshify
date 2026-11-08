@@ -56,6 +56,8 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 ## v0.4 — DSH plugin + community surface
 
+**Status (2026-11-08):** the plugin wrapper landed early as `@eatosin/dshify-plugin@0.1.0` (Host-only bundle): the `migrate_harness` tool, the `/migrate` command, locale and icon display metadata, and a Trusted Publishing release workflow. The marketplace listing, `install_bundle` step and rollback remain open.
+
 **Work**
 
 - Publish `@dshify/plugin` as a Cordis bundle: `migrate_harness` tool (scan/plan/apply/check as tool calls with JSON results) and a `/migrate` command.

@@ -44,6 +44,24 @@ The package is scoped (`@eatosin/dshify`) because npm reserves the unscoped name
 
 Requires Node.js 22.12 or later. The core is offline: `scan`, `plan`, `apply`, and `check` make no network calls and send no telemetry.
 
+## Use it inside DSH (plugin)
+
+dshify is also a DeepSeek Harness plugin. In DSH, open the plugin installation page and enter:
+
+```text
+@eatosin/dshify-plugin
+```
+
+The plugin adds the `migrate_harness` tool and the `/migrate` command. It runs the same offline engine. Examples:
+
+```text
+/migrate plan
+/migrate apply . --presets
+/migrate check
+```
+
+The plugin never sends your code over the network. `apply` writes files; use a test branch first. See [plugin/README.md](plugin/README.md).
+
 ## First run
 
 Use a test branch. Then run these commands in the source repository:

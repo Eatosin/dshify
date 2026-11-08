@@ -43,6 +43,7 @@ The CLI is a thin shell. Everything testable lives behind pure-ish functions tha
 | `src/emit/dsh/skills.ts` | IR → `SKILL.md` bytes and resource copies | none (returns artifacts) |
 | `src/emit/dsh/bundle.ts` | personas + MCP → Cordis patch rows (YAML) | none |
 | `src/verify/discovery.ts` | DSH discovery simulation over a tree | read |
+| `plugin/` | Host-only DSH bundle: `migrate_harness` tool + `/migrate` command over the published engine | `dest` + lockfile, only when the tool's `apply` action runs |
 | `src/verify/live.ts` | opt-in probe through the `dsh` binary with a temp `DSH_HOME` | spawn (`dsh` only) |
 
 No module imports `node:http`/`https`; the no-network test enforces it.
