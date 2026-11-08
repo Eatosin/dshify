@@ -2,105 +2,173 @@
 
 [![npm](https://img.shields.io/npm/v/@eatosin/dshify.svg)](https://www.npmjs.com/package/@eatosin/dshify)
 
-Port an existing agent-harness setup to **DeepSeek Harness (DSH)** — with verification, owned writes, and an honest loss report. Not a `sed` script.
+Port an agent-harness setup to **DeepSeek Harness (DSH)**. dshify scans the source repository, plans a DSH surface, writes owned files, and checks that DSH discovery can find the result. It reports each capability that it changes or loses.
 
 ![dshify demo: scan, plan, apply and check on a small OpenCode repo](docs/assets/demo.gif)
 
-The demo runs `scan` → `plan` → `apply` → `check` on a small OpenCode repo. Run it yourself with `bash scripts/demo.sh` after `npm run build`.
+## What it does
 
-> **Status: v0.1.1** — published as [`@eatosin/dshify`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance. OpenCode V2 → DSH, verified. All five commands, `--presets`, and the checked discovery simulation are implemented; `--strategy link` and `--verify-live` are not. Do not run it against a repo you cannot restore from git.
+dshify has five commands:
+
+| Command | Result | Writes |
+|---|---|---|
+| `scan` | Read the source harness into a normalized model (IR). | No |
+| `plan` | Show the output files, the findings, and the loss report. | No |
+| `apply` | Write `.dsh/` and `.dshify.lock.json`. | Yes |
+| `check` | Compare the plan, the files, and the lockfile. Run the DSH discovery simulation. | No |
+| `verify` | Show what DSH discovery can see in the current tree. | No |
+
+`apply` is the only writer. It is idempotent: a second run changes nothing.
+
+## Demo
+
+The GIF shows one run on a small OpenCode repository. Run the same demo:
+
+```bash
+git clone https://github.com/Eatosin/dshify.git
+cd dshify
+npm install
+npm run build
+npm run demo
+```
 
 ## Install
 
 ```bash
 npm install -g @eatosin/dshify
-# or without installing:
+# or run without installing:
 npx @eatosin/dshify --help
 ```
 
-The package is scoped (`@eatosin/dshify`) because npm's name-similarity policy reserves the unscoped `dshify`; the installed command is still `dshify`. Requires Node >= 22.12. The core is offline: `scan`/`plan`/`apply`/`check` make no network calls and send no telemetry.
+The package is scoped (`@eatosin/dshify`) because npm reserves the unscoped name. The installed command is `dshify`.
 
-## The problem
+Requires Node.js 22.12 or later. The core is offline: `scan`, `plan`, `apply`, and `check` make no network calls and send no telemetry.
 
-Every harness says it is "markdown-native", then disagrees about everything else: which roots it scans, whether nested `SKILL.md` files exist, how slash commands are defined, what a subagent even is, how MCP auth is expressed. Moving a real repository from OpenCode, Claude Code, or Codex to DSH means re-deriving all of that by hand, and the failure mode is silence — the agent simply never sees the skill.
+## First run
 
-`dshify` makes the switch explicit:
-
-1. **Scan** the source harness into a normalized model.
-2. **Plan** a DSH-native surface and print every capability you win, adapt, or lose.
-3. **Apply** the plan as owned, idempotent files under `.dsh/`.
-4. **Check** that DSH actually discovers what was written — in CI, not by vibes.
-
-## Roadmap
-
-| Version | Scope |
-|---|---|
-| **v0.1** | OpenCode V2 → DSH. Skills, commands, subagents, skill roots, MCP servers. CLI + verifier + fixtures. |
-| v0.2 | Claude Code adapter (`.claude/{commands,agents,skills}`, `CLAUDE.md`, MCP). |
-| v0.3 | Codex adapter (`AGENTS.md`, prompts) and multi-source repos. |
-| v0.4 | DSH plugin wrapper (`migrate_harness` tool, `/migrate` command, bundle install/rollback). |
-
-Detailed exit criteria: [docs/roadmap.md](docs/roadmap.md).
-
-## Quickstart
-
-Point the CLI at an OpenCode repo; every command is dry-run except `apply`:
+Use a test branch. Then run these commands in the source repository:
 
 ```bash
-cd /path/to/your/opencode-repo
-dshify scan .     # inventory the source harness; writes nothing
-dshify plan .     # artifacts, findings and losses; writes nothing
-dshify apply .    # writes .dsh/ and .dshify.lock.json (the only writer)
-dshify check .    # CI gate: exits 3 on drift/conflict, 4 on invisible artifacts
-git add .dsh .dshify.lock.json && git commit -m "chore: add the DSH surface"
-
-# optional: persona presets and MCP rows
-dshify apply . --presets
+cd /path/to/opencode-repo
+dshify scan .     # inventory the source harness
+dshify plan .     # see the files and the loss report
+dshify apply .    # write .dsh/ and .dshify.lock.json
+dshify check .    # prove that DSH discovery finds each skill
+git add .dsh .dshify.lock.json
+git commit -m "chore: add the DSH surface"
 ```
 
-`apply` never deletes user files and refuses to overwrite anything it does not own: a human edit is reported as a conflict, not clobbered. Full contract: [docs/cli.md](docs/cli.md).
+`apply` does not delete your files. It does not overwrite a file that dshify does not own. If you edit a generated file, `apply` reports a conflict and keeps your edit.
 
-Working from source instead? `npm install && npm run build`, then `alias dshify="node $PWD/dist/cli.js"`.
+## Example output
 
-## CLI (v0.1)
+`scan` reads the source harness:
 
 ```text
-dshify scan  [path]   inventory the source harness, write nothing
-dshify plan  [path]   show the conversion plan + loss report, write nothing
-dshify apply [path]   write .dsh/ and .dshify.lock.json
-dshify check [path]   verify artifacts, lockfile, and DSH discovery (CI mode)
-dshify verify [path]  discovery check only
+$ dshify scan .
+dshify scan . (opencode adapter 0.1.0)
+  skills    1 (1 copyable, 0 native)
+  commands  1
+  personas  1
+  mcp       0
+  findings  1
+    warning UNKNOWN_FIELD .opencode/agents/auditor.md
 ```
 
-All commands accept `--json`, `--dest <dir>`, `--root <dir>` (repeatable), `--quiet`. `apply` is the only command that writes, and only inside the destination tree. Full contract: [docs/cli.md](docs/cli.md).
-
-## Design principles
-
-- **Verify, don't assume.** After emitting, simulate DSH discovery (fixed roots, frontmatter rules, direct-children-only) and optionally assert against a live DSH session. A conversion that does not verify fails.
-- **Owned writes.** Never modify the source harness. Write only under `.dsh/` plus one lockfile. Re-runs update only files dshify created and the user has not edited; conflicts are reported, never clobbered.
-- **Honest lossiness.** Every unsupported or adapted behavior carries a code and severity: `exact`, `adapted`, `lossy`, `manual`, `unsupported`. The report is a deliverable, not log noise.
-- **Deterministic output.** Sorted keys, stable file order, no timestamps in artifacts. Same input + same version = byte-identical output.
-- **Offline by default.** No network calls from scan/plan/apply/check. Live verification is opt-in.
-
-## Repository layout
+`plan` shows the files and each loss:
 
 ```text
-src/            CLI + core (IR, adapters, emitters, verifier)
-docs/           spec, architecture, CLI contract, per-harness mapping, roadmap
-map/            one card per load-bearing noun + change-impact index (for agents)
-fixtures/       synthetic source-harness repos (committed, tiny, no secrets)
-test/           unit and golden tests
-_tools/         workspace checks: links, generated indexes, walk test
+$ dshify plan .
+Plan
+  persona-skill    .dsh/skills/auditor/SKILL.md adapted
+  skill            .dsh/skills/greet/SKILL.md   exact
+  command-skill    .dsh/skills/review/SKILL.md  adapted
+
+Losses
+  info    ARGS_SUBSTITUTION        .opencode/commands/review.md
+  warning SUBAGENT_ISOLATION       .opencode/agents/auditor.md
 ```
+
+`apply` writes the files and the lockfile:
+
+```text
+$ dshify apply .
+Apply
+  written       .dsh/skills/auditor/SKILL.md
+  written       .dsh/skills/greet/SKILL.md
+  written       .dsh/skills/review/SKILL.md
+Lockfile
+  .dshify.lock.json (3 sources, 3 artifacts, written)
+```
+
+`check` proves the result:
+
+```text
+$ dshify check .
+Check
+  unchanged  .dsh/skills/auditor/SKILL.md
+  unchanged  .dsh/skills/greet/SKILL.md
+  unchanged  .dsh/skills/review/SKILL.md
+
+Verification
+  roots    .dsh/skills
+  visible  3
+  skipped  0
+```
+
+`check` exits 3 on drift or conflict. It exits 4 when DSH discovery cannot see an emitted skill. Use it in CI.
+
+## What it does not do
+
+- It does not flatten nested skills. It reports `UNSUPPORTED_NESTED_SKILL`.
+- It does not support `--strategy link` or `--verify-live` yet.
+- It does not support Claude Code or Codex yet. These adapters are on the roadmap.
+- It does not run source plugins, commands, or MCP servers.
+- It does not repair a human edit. It reports the conflict and keeps the edit.
+
+## How it works
+
+1. **Adapter.** Read the source harness into `HarnessIR`. The IR is the narrow waist.
+2. **Emitter.** Build deterministic DSH files. Assign a capability class to each item: `exact`, `adapted`, `lossy`, `manual`, or `unsupported`.
+3. **Write matrix.** Compare each artifact with the destination and the lockfile. Then write only the owned files and report the rest.
+4. **Verifier.** Simulate DSH discovery: fixed roots, direct children only, strict frontmatter. A conversion that does not verify fails.
+
+Read the contract in [docs/spec.md](docs/spec.md). Read the design in [docs/architecture.md](docs/architecture.md).
+
+## FAQ
+
+**Does dshify change my source repository?**
+No. It writes only under `.dsh/` and one lockfile.
+
+**Does dshify need a network connection?**
+No. The core is offline. Live verification is opt-in and is not implemented yet.
+
+**What happens if I edit a generated file?**
+`check` reports a conflict and exits 3. `apply` keeps your edit. Use `--force` only if you want to replace it.
+
+**What happens if DSH cannot see a generated skill?**
+`check` reports `DISCOVERY_MISS` and exits 4.
+
+**Which harnesses are supported?**
+OpenCode V2 now. Claude Code is planned for v0.2. Codex is planned for v0.3.
+
+**How do I remove the DSH surface?**
+Delete `.dsh/` and `.dshify.lock.json`. The source repository does not change.
+
+## Status and roadmap
+
+The current version is `0.1.2`. It is published as [`@eatosin/dshify`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance.
+
+OpenCode V2 is supported now. The next milestones are the Claude Code adapter, the Codex adapter, and a DSH plugin wrapper. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Adapter contributions are the most valuable: each source harness gets one adapter module plus a fixture plus mapping docs. The v0.1 spec is the contract — changes to it go through a spec PR before code.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). The most useful contribution is a new adapter: one adapter module, one fixture record, and mapping documentation.
 
 ## Security
 
-`dshify` never executes source-harness content and never writes outside the destination tree. Report vulnerabilities via [SECURITY.md](SECURITY.md).
+dshify does not execute source-harness content. Report a vulnerability through [SECURITY.md](SECURITY.md). Do not open a public issue.
 
 ## License
 
-[MIT](LICENSE). "OpenCode", "Claude", "Codex", and "DeepSeek" are trademarks of their owners; `dshify` is unaffiliated and names them only to describe compatibility.
+[MIT](LICENSE). "OpenCode", "Claude", "Codex", and "DeepSeek" are trademarks of their owners. dshify is not affiliated with them.
