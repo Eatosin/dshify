@@ -28,6 +28,8 @@ jobs:
       - run: npm run build
       # The published tarball contains dist + docs the CLI needs; never ship the repo.
       - run: npm pack --dry-run
+      - name: Check plugin package contents
+        run: cd plugin && npm pack --dry-run
 
   docs:
     name: docs workspace

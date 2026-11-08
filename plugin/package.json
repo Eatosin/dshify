@@ -1,0 +1,61 @@
+{
+  "name": "@eatosin/dshify-plugin",
+  "version": "0.1.0",
+  "description": "Port an OpenCode repository to DeepSeek Harness from inside DSH: scan, plan, apply and check, with owned writes and discovery verification.",
+  "icon": "icon.svg",
+  "author": "Owadokun Tosin Tobi",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.12.0",
+    "dsh": ">=0.2.2-rc.1"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "migration",
+    "opencode"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Eatosin/dshify.git",
+    "directory": "plugin"
+  },
+  "homepage": "https://github.com/Eatosin/dshify#readme",
+  "bugs": {
+    "url": "https://github.com/Eatosin/dshify/issues"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "compatibility": {
+      "dshReleases": {
+        "0.2.2-rc.1+": "compatible"
+      }
+    }
+  },
+  "dependencies": {
+    "@eatosin/dshify": "^0.1.2"
+  },
+  "types": "index.d.ts"
+}

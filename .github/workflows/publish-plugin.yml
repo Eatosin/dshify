@@ -1,0 +1,61 @@
+name: publish-plugin
+
+# Releases the DSH plugin package. The trusted publisher for
+# @eatosin/dshify-plugin must name this workflow file (publish-plugin.yml).
+# Push a plugin-v* tag, or run manually. Skipped when the version already
+# exists, so re-pointed tags stay safe.
+on:
+  push:
+    tags: ['plugin-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Tag must match plugin version
+        if: startsWith(github.ref, 'refs/tags/plugin-v')
+        run: |
+          expected="plugin-v$(node -p "require('./plugin/package.json').version")"
+          if [ "$expected" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME does not match plugin version $expected"
+            exit 1
+          fi
+      - name: Publish plugin with provenance
+        working-directory: plugin
+        shell: bash
+        run: |
+          set -o pipefail
+          version="$(node -p "require('./package.json').version")"
+          if npm view "@eatosin/dshify-plugin@${version}" version >/dev/null 2>&1; then
+            echo "@eatosin/dshify-plugin@${version} is already published; nothing to do"
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            echo "publish attempt $attempt"
+            if npm publish --provenance --access public 2>&1 | tee /tmp/publish.log; then
+              exit 0
+            fi
+            if grep -qE 'TLOG_CREATE_ENTRY_ERROR|equivalent entry already exists' /tmp/publish.log; then
+              echo "transient transparency-log conflict; retrying in 20s"
+              sleep 20
+              continue
+            fi
+            echo "non-transient publish failure"
+            exit 1
+          done
+          echo "publish failed after 3 attempts"
+          exit 1

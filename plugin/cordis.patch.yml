@@ -1,0 +1,4 @@
+# Host-only bundle: one row activates the dshify tool and the /migrate command.
+- insert:
+    - id: dshify
+      name: '@eatosin/dshify-plugin'

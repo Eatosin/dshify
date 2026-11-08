@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "dshify migration",
+    "description": "Port an OpenCode repository to DeepSeek Harness. Scan, plan, apply and check with owned writes and discovery verification."
+  }
+}
