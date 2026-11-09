@@ -177,7 +177,7 @@ Delete `.dsh/` and `.dshify.lock.json`. The source repository does not change.
 
 ## Status and roadmap
 
-The current version is `0.1.2`. It is published as [`@eatosin/dshify`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance.
+The current version is `0.1.3`. It is published as [`@eatosin/dshify`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance.
 
 OpenCode V2 is supported now. The next milestones are the Claude Code adapter, the Codex adapter, and a DSH plugin wrapper. See [docs/roadmap.md](docs/roadmap.md).
 

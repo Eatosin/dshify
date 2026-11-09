@@ -61,7 +61,7 @@ Scripts must not parse human output; use `--json` and the exit code.
 
 ## JSON envelopes
 
-All `--json` output is one object with a discriminator, a `schemaVersion`, and `findings`:
+All `--json` output is one object with a discriminator, a `schemaVersion`, the discovery `rules` it assumes, and `findings`:
 
 ```json
 {
@@ -71,6 +71,12 @@ All `--json` output is one object with a discriminator, a `schemaVersion`, and `
   "root": "/abs/repo",
   "dest": ".dsh",
   "harness": { "id": "opencode", "version": "0.1.0" },
+  "rules": {
+    "rulesVersion": 1,
+    "dshVersion": "0.2.2-rc.1",
+    "source": "docs/dsh-facts",
+    "packages": ["@deepseek-ai/dsh-skill-filesystem", "@deepseek-ai/dsh-tool-skill"]
+  },
   "findings": [
     { "code": "ARGS_SUBSTITUTION", "severity": "info", "capability": "adapted",
       "path": ".opencode/commands/hello.md", "message": "…" }
@@ -83,6 +89,8 @@ All `--json` output is one object with a discriminator, a `schemaVersion`, and `
   "summary": { "planned": 4, "written": 0, "losses": 2, "conflicts": 0 }
 }
 ```
+
+Every envelope carries the same `rules` object: `rulesVersion` increases when the simulated discovery rules change, `dshVersion` names the shipped DSH release the rules mirror, `source` points at the checked fact register, and `packages` lists the documented packages involved. The field is additive; `schemaVersion` stays `1`.
 
 `scan` replaces `artifacts` with `inventory`; `check` adds `verification: { roots, visible, skipped }`. Findings carry stable codes documented in each mapping doc. Secrets are redacted before serialization.
 

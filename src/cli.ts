@@ -13,6 +13,7 @@ import { checkRepo, type CheckResult } from './core/check.js';
 import { LOCKFILE_NAME } from './core/lockfile.js';
 import { planRepo } from './core/plan.js';
 import { finding, sortFindings } from './core/report.js';
+import { DISCOVERY_RULES, type DiscoveryRules } from './core/rules.js';
 import { scanRepo } from './core/scan.js';
 import { verifyDiscovery, type DiscoveryResult } from './verify/discovery.js';
 import { DEFAULT_SCAN_LIMITS, readSourceBytes } from './core/source.js';
@@ -173,6 +174,7 @@ function displayRoot(root: string, cwd: string): string {
 interface ScanEnvelope {
   readonly kind: 'scan';
   readonly schemaVersion: 1;
+  readonly rules: DiscoveryRules;
   readonly ok: boolean;
   readonly root: string;
   readonly harness: { readonly id: string; readonly version: string };
@@ -236,6 +238,7 @@ async function runScan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
     const envelope: ScanEnvelope = {
       kind: 'scan',
       schemaVersion: 1,
+      rules: DISCOVERY_RULES,
       ok: true,
       root: ir.root,
       harness: { id: ir.harness, version: ir.version },
@@ -268,6 +271,7 @@ async function runScan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
 interface PlanEnvelope {
   readonly kind: 'plan';
   readonly schemaVersion: 1;
+  readonly rules: DiscoveryRules;
   readonly ok: boolean;
   readonly root: string;
   readonly dest: string;
@@ -344,6 +348,7 @@ async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
     const envelope: PlanEnvelope = {
       kind: 'plan',
       schemaVersion: 1,
+      rules: DISCOVERY_RULES,
       ok: true,
       root: ir.root,
       dest,
@@ -380,6 +385,7 @@ async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
 interface ApplyEnvelope {
   readonly kind: 'apply';
   readonly schemaVersion: 1;
+  readonly rules: DiscoveryRules;
   readonly ok: boolean;
   readonly root: string;
   readonly dest: string;
@@ -490,6 +496,7 @@ async function runApply(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     const envelope: ApplyEnvelope = {
       kind: 'apply',
       schemaVersion: 1,
+      rules: DISCOVERY_RULES,
       ok: result.ok,
       root: ir.root,
       dest,
@@ -526,6 +533,7 @@ interface VerificationView {
 interface CheckEnvelope {
   readonly kind: 'check';
   readonly schemaVersion: 1;
+  readonly rules: DiscoveryRules;
   readonly ok: boolean;
   readonly root: string;
   readonly dest: string;
@@ -555,6 +563,7 @@ interface CheckEnvelope {
 interface VerifyEnvelope {
   readonly kind: 'verify';
   readonly schemaVersion: 1;
+  readonly rules: DiscoveryRules;
   readonly ok: boolean;
   readonly root: string;
   readonly verification: VerificationView;
@@ -600,6 +609,7 @@ function renderCheckHuman(
   lines.push(`  roots    ${result.verification.roots.join(', ') || 'none'}`);
   lines.push(`  visible  ${result.verification.visible.length}`);
   lines.push(`  skipped  ${result.verification.skipped.length}`);
+  lines.push(`  rules    DSH ${DISCOVERY_RULES.dshVersion} (rules v${DISCOVERY_RULES.rulesVersion})`);
   lines.push('', 'Findings');
   if (result.findings.length === 0) lines.push('  none');
   for (const item of result.findings) {
@@ -645,6 +655,7 @@ async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     const envelope: CheckEnvelope = {
       kind: 'check',
       schemaVersion: 1,
+      rules: DISCOVERY_RULES,
       ok: result.ok,
       root: ir.root,
       dest,
@@ -684,6 +695,7 @@ function renderVerifyHuman(root: string, verification: DiscoveryResult, cwd: str
     `  visible  ${verification.visible.length}`,
     `  skipped  ${verification.skipped.length}`,
     `  complete ${verification.complete ? 'yes' : 'no'}`,
+    `  rules    DSH ${DISCOVERY_RULES.dshVersion} (rules v${DISCOVERY_RULES.rulesVersion})`,
   ];
   for (const skill of verification.visible) {
     lines.push(`    visible ${skill.path}`);
@@ -705,6 +717,7 @@ async function runVerify(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<nu
     const envelope: VerifyEnvelope = {
       kind: 'verify',
       schemaVersion: 1,
+      rules: DISCOVERY_RULES,
       ok,
       root: roots.repoRoot,
       verification: verificationView(verification),
