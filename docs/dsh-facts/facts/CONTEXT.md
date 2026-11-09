@@ -6,6 +6,10 @@ One job: hold the shipped-DSH facts the verifier cites, each pinned to a package
 
 The fields and body sections are defined in [`../_meta/schema.md`](../_meta/schema.md). The quote is verbatim; the note never restates the contract.
 
+## Reported rule set
+
+`check` and `verify` report `rules` with `rulesVersion`, `dshVersion` and `packages`. Bump `rulesVersion` when these facts change, and update `src/core/rules.ts` in the same PR.
+
 ## Verify
 
 ```bash

@@ -2,6 +2,20 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.1.3] — 2026-11-09
+
+### Added
+
+- Every `--json` envelope now carries `rules`: the versioned DSH discovery rule
+  set the report assumes (`rulesVersion`, `dshVersion`, `source`, `packages`).
+- `check` and `verify` show the rule set in the human report.
+
+### Notes
+
+- Additive change: `schemaVersion` stays `1`. Closes #24.
+- `rulesVersion` increases when the simulated rules change; the pinned quotes
+  live in `docs/dsh-facts/`.
+
 ## [0.1.2] — 2026-11-08
 
 ### Changed

@@ -397,3 +397,36 @@ describe('verify command', () => {
     ]);
   });
 });
+
+describe('JSON reports name the discovery rule set', () => {
+  it('includes rules in every envelope', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    for (const command of ['scan', 'plan', 'apply', 'check', 'verify']) {
+      const c = capture();
+      expect(await run([command, root, '--json'], c.io, { cwd })).toBe(0);
+      const payload = JSON.parse(c.out()) as {
+        rules?: {
+          rulesVersion: number;
+          dshVersion: string;
+          source: string;
+          packages: string[];
+        };
+      };
+      expect(payload.rules, command).toMatchObject({
+        rulesVersion: 1,
+        dshVersion: '0.2.2-rc.1',
+        source: 'docs/dsh-facts',
+      });
+      expect(payload.rules?.packages).toContain('@deepseek-ai/dsh-skill-filesystem');
+    }
+  });
+
+  it('shows the rule set in the human check report', async () => {
+    const root = await freshFixture();
+    await run(['apply', root], capture().io, { cwd });
+    const c = capture();
+    expect(await run(['check', root], c.io, { cwd })).toBe(0);
+    expect(c.out()).toContain('rules    DSH 0.2.2-rc.1 (rules v1)');
+  });
+});

@@ -63,6 +63,8 @@ export type { PlanOptions } from './core/plan.js';
 export { DEFAULT_SEVERITY, FINDING_CODES, finding, sortFindings } from './core/report.js';
 export type { FindingCode } from './core/report.js';
 export { getAdapter, listAdapters, scanRepo } from './core/scan.js';
+export { DISCOVERY_RULES } from './core/rules.js';
+export type { DiscoveryRules } from './core/rules.js';
 export { DEFAULT_SCAN_LIMITS } from './core/source.js';
 export { DEFAULT_DISCOVERY_ROOTS, verifyDiscovery } from './verify/discovery.js';
 export type {
