@@ -1,9 +1,9 @@
 # @eatosin/dshify-plugin
 
-[![Status: pre-release](https://img.shields.io/badge/status-pre--release%20%C2%B7%20final%20verification-orange)](https://github.com/Eatosin/dshify)
+[![npm](https://img.shields.io/npm/v/@eatosin/dshify-plugin.svg)](https://www.npmjs.com/package/@eatosin/dshify-plugin)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/Eatosin/dshify/blob/main/LICENSE)
 
-> **Launching soon.** Version `0.1.0` is staged for release. Final verification runs now: unit tests, a packed install, and a real DSH composition check. Installation below becomes available after npm approval. Watch the repository for the release notice.
+> **Released.** `@eatosin/dshify-plugin@0.1.0` is live. Compatibility: DSH `0.2.2-rc.1` and later. The package content was verified byte-for-byte before release.
 
 DeepSeek Harness (DSH) plugin for [dshify](https://github.com/Eatosin/dshify). It ports an OpenCode repository to a DSH surface from inside a session.
 

@@ -46,7 +46,7 @@ Requires Node.js 22.12 or later. The core is offline: `scan`, `plan`, `apply`, a
 
 ## Use it inside DSH (plugin)
 
-> **Launching soon.** The DSH plugin (`@eatosin/dshify-plugin`) is in final verification. It is staged for release. Installation instructions below are ready; the package becomes installable after npm approval.
+> **Available now.** Install [`@eatosin/dshify-plugin`](https://www.npmjs.com/package/@eatosin/dshify-plugin) from the DSH plugin installation page.
 
 dshify is also a DeepSeek Harness plugin. In DSH, open the plugin installation page and enter:
 
