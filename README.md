@@ -1,6 +1,7 @@
 # dshify
 
 [![npm](https://img.shields.io/npm/v/@eatosin/dshify.svg)](https://www.npmjs.com/package/@eatosin/dshify)
+[![plugin](https://img.shields.io/npm/v/@eatosin/dshify-plugin.svg?label=plugin)](https://www.npmjs.com/package/@eatosin/dshify-plugin)
 
 Port an agent-harness setup to **DeepSeek Harness (DSH)**. dshify scans the source repository, plans a DSH surface, writes owned files, and checks that DSH discovery can find the result. It reports each capability that it changes or loses.
 
