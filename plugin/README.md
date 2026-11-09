@@ -17,6 +17,14 @@ In DSH, open the plugin installation page and enter the package name:
 
 Compatibility: DSH `0.2.2-rc.1` and later. The plugin requires Node.js 22.12 or later. It depends on `@eatosin/dshify`, which contains the migration engine and the offline core.
 
+### Troubleshooting: `spawn pnpm ENOENT`
+
+The DSH plugin manager uses pnpm for lookup and install. If the Add plugin dialog fails with `spawn pnpm ENOENT`, install pnpm once, then retry:
+
+```bash
+npm install -g pnpm
+```
+
 ## What it adds
 
 The plugin adds one model-facing tool, one human command, and a read-only Web panel.
