@@ -1,6 +1,6 @@
 {
   "name": "@eatosin/dshify-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Port an OpenCode repository to DeepSeek Harness from inside DSH: scan, plan, apply and check, with owned writes and discovery verification.",
   "icon": "icon.svg",
   "author": "Owadokun Tosin Tobi",
@@ -12,15 +12,20 @@
     "./package.json": "./package.json",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./locale/*.json": "./locale/*.json",
-    "./icon": "./icon.svg"
+    "./icon": "./icon.svg",
+    "./client": "./client.js"
   },
   "files": [
     "index.js",
+    "migrate.js",
+    "client.js",
     "index.d.ts",
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
     "README.md",
+    "ROADMAP.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {
@@ -52,6 +57,13 @@
       "dshReleases": {
         "0.2.2-rc.1+": "compatible"
       }
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings-plugins"
+      ]
     }
   },
   "dependencies": {

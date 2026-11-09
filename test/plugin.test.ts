@@ -149,3 +149,160 @@ describe('/migrate command', () => {
     expect(failed.text).toContain('does not exist');
   });
 });
+
+interface CapturedRoute {
+  readonly kind: string;
+  readonly path: string;
+  handler(req: any, res: any): Promise<void>;
+}
+
+function responseRecorder() {
+  const state = { status: 0, headers: {}, body: '' };
+  return {
+    state,
+    res: {
+      writeHead(status: number, headers: Record<string, string>) {
+        state.status = status;
+        state.headers = headers;
+      },
+      end(body: string) {
+        state.body = body;
+      },
+    },
+  };
+}
+
+async function serverContext() {
+  const tools: RegisteredTool[] = [];
+  const routes: CapturedRoute[] = [];
+  const ctx = {
+    tools: {
+      register(definition: RegisteredTool) {
+        tools.push(definition);
+        return () => undefined;
+      },
+    },
+    get(service: string) {
+      if (service === 'webServer') {
+        return {
+          register(route: CapturedRoute) {
+            routes.push(route);
+            return () => undefined;
+          },
+        };
+      }
+      if (service === 'workingDirectory') return { defaultDirectory: process.cwd() };
+      return undefined;
+    },
+    effect(effect: () => unknown) {
+      return effect();
+    },
+  };
+  applyPlugin(ctx);
+  const route = routes[0];
+  if (route === undefined) throw new Error('route was not registered');
+  return { route, tools };
+}
+
+function postRequest(body: unknown) {
+  const text = JSON.stringify(body);
+  return {
+    method: 'POST',
+    async *[Symbol.asyncIterator]() {
+      yield Buffer.from(text, 'utf8');
+    },
+    destroy() {},
+  };
+}
+
+describe('read-only Web route', () => {
+  it('registers the exact JSON route', async () => {
+    const { route } = await serverContext();
+    expect(route.kind).toBe('exact');
+    expect(route.path).toBe('/api/dshify/migrate');
+  });
+
+  it('runs scan for the panel', async () => {
+    const root = await fixtureCopy();
+    const { route } = await serverContext();
+    const { res, state } = responseRecorder();
+    await route.handler(postRequest({ action: 'scan', path: root }), res);
+    expect(state.status).toBe(200);
+    const payload = JSON.parse(state.body) as { ok: boolean; result: { action: string; summary: any } };
+    expect(payload.ok).toBe(true);
+    expect(payload.result.action).toBe('scan');
+    expect(payload.result.summary.skills).toBeGreaterThan(0);
+  });
+
+  it('refuses apply, non-POST methods, and invalid bodies', async () => {
+    const root = await fixtureCopy();
+    const { route } = await serverContext();
+
+    const applyRes = responseRecorder();
+    await route.handler(postRequest({ action: 'apply', path: root }), applyRes.res);
+    expect(applyRes.state.status).toBe(403);
+
+    const getRes = responseRecorder();
+    await route.handler({ method: 'GET' }, getRes.res);
+    expect(getRes.state.status).toBe(405);
+
+    const badRes = responseRecorder();
+    await route.handler(postRequest({ action: 'publish' }), badRes.res);
+    expect(badRes.state.status).toBe(400);
+  });
+});
+
+describe('client half', () => {
+  it('registers the settings tab with locale text', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const vm = await import('node:vm');
+    const code = await readFile(new URL('../plugin/client.js', import.meta.url), 'utf8');
+
+    const registrations: Array<{ options: any; component: any }> = [];
+    const dictionaries: Array<{ ns: string; locale: string; dict: any }> = [];
+    const react = {
+      createElement: (...args: unknown[]) => ({ args }),
+      useState: (value: unknown) => [value, () => undefined],
+      useCallback: (callback: unknown) => callback,
+    };
+
+    const fakeWindow = {
+      __ModuleLoader__: {
+        load(entry: { id: string; factory: (require: (name: string) => unknown) => any }) {
+          const module = entry.factory((name: string) => (name === 'react' ? react : {}));
+          const ctx = {
+            effect(effect: () => unknown) {
+              return effect();
+            },
+            locale: {
+              register(ns: string, locale: string, dict: any) {
+                dictionaries.push({ ns, locale, dict });
+                return () => undefined;
+              },
+              bind: () => (key: string) => key,
+            },
+            slots: {
+              inject(_name: string, callback: () => unknown) {
+                callback();
+                return () => undefined;
+              },
+              register(options: any, component: any) {
+                registrations.push({ options, component });
+                return () => undefined;
+              },
+            },
+          };
+          module.apply(ctx);
+        },
+      },
+    };
+
+    vm.runInNewContext(code, { window: fakeWindow });
+    expect(dictionaries).toHaveLength(1);
+    expect(dictionaries[0]?.dict.title).toContain('Migrate');
+    expect(registrations).toHaveLength(1);
+    expect(registrations[0]?.options.name).toBe('settings.plugins.tab');
+    expect(registrations[0]?.options.id).toBe('dshify');
+    expect(typeof registrations[0]?.component).toBe('function');
+  });
+});
