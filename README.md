@@ -55,7 +55,7 @@ dshify is also a DeepSeek Harness plugin. In DSH, open the plugin installation p
 @eatosin/dshify-plugin
 ```
 
-The plugin adds the `migrate_harness` tool and the `/migrate` command. It runs the same offline engine. Examples:
+The plugin adds the `migrate_harness` tool, the `/migrate` command, and a read-only migration panel in **Settings → Plugins**. It runs the same offline engine. Examples:
 
 ```text
 /migrate plan
