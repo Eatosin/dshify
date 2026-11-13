@@ -234,13 +234,14 @@ describe('read-only Web route', () => {
     expect(payload.result.summary.skills).toBeGreaterThan(0);
   });
 
-  it('refuses apply, non-POST methods, and invalid bodies', async () => {
+  it('refuses apply without confirmation, non-POST methods, and invalid bodies', async () => {
     const root = await fixtureCopy();
     const { route } = await serverContext();
 
     const applyRes = responseRecorder();
     await route.handler(postRequest({ action: 'apply', path: root }), applyRes.res);
     expect(applyRes.state.status).toBe(403);
+    await expect(stat(path.join(root, '.dsh'))).rejects.toBeDefined();
 
     const getRes = responseRecorder();
     await route.handler({ method: 'GET' }, getRes.res);
@@ -249,6 +250,21 @@ describe('read-only Web route', () => {
     const badRes = responseRecorder();
     await route.handler(postRequest({ action: 'publish' }), badRes.res);
     expect(badRes.state.status).toBe(400);
+  });
+
+  it('applies after an explicit confirmation', async () => {
+    const root = await fixtureCopy();
+    const { route } = await serverContext();
+
+    const { res, state } = responseRecorder();
+    await route.handler(postRequest({ action: 'apply', path: root, confirm: true }), res);
+    expect(state.status).toBe(200);
+    const payload = JSON.parse(state.body) as { ok: boolean; result: { action: string; summary: any } };
+    expect(payload.ok).toBe(true);
+    expect(payload.result.action).toBe('apply');
+    expect(payload.result.summary.written).toBeGreaterThanOrEqual(1);
+    expect(await stat(path.join(root, '.dsh/skills'))).toBeDefined();
+    expect(await stat(path.join(root, '.dshify.lock.json'))).toBeDefined();
   });
 });
 

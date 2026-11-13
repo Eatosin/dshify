@@ -177,19 +177,25 @@ function makeHandler(ctx) {
       return;
     }
 
-    let input;
-    try {
-      input = validateInput(raw);
-    } catch (error) {
-      send(400, { ok: false, error: error instanceof Error ? error.message : String(error) });
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+      send(400, { ok: false, error: 'request body must be a JSON object' });
       return;
     }
 
-    if (input.action === 'apply') {
+    if (raw.action === 'apply' && raw.confirm !== true) {
       send(403, {
         ok: false,
-        error: 'apply is not available from this panel; use the migrate_harness tool or /migrate apply',
+        error: 'apply requires confirm: true (the panel asks for confirmation first)',
       });
+      return;
+    }
+
+    let input;
+    try {
+      const { confirm: _confirm, ...rest } = raw;
+      input = validateInput(rest);
+    } catch (error) {
+      send(400, { ok: false, error: error instanceof Error ? error.message : String(error) });
       return;
     }
 
