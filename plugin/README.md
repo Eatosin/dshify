@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@eatosin/dshify-plugin.svg)](https://www.npmjs.com/package/@eatosin/dshify-plugin)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/Eatosin/dshify/blob/main/LICENSE)
 
-> **Released.** `@eatosin/dshify-plugin@0.2.0` is live. Compatibility: DSH `0.2.2-rc.1` and later. The Web panel is read-only; apply stays in the tool and command.
+> **Released.** `@eatosin/dshify-plugin@0.3.0` is live. It tracks engine `0.2.0` (`--delegation`, model routes, preset prefix). Compatibility: DSH `0.2.2-rc.1` and later. The Web panel is read-only; apply stays in the tool and command.
 
 DeepSeek Harness (DSH) plugin for [dshify](https://github.com/Eatosin/dshify). It ports an OpenCode repository to a DSH surface from inside a session.
 
