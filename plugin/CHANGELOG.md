@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0] — 2026-11-13
+
+### Added
+
+- **Apply** in the Web panel. It opens a confirmation card that names the write
+  target and states that conflicts are kept.
+- `POST /api/dshify/migrate` accepts `apply` only with `confirm: true`; an
+  unconfirmed apply returns `403`.
+
+### Notes
+
+- The panel does not expose `force`. Use the tool or `/migrate apply`.
+- Conflicts are reported after apply and preserved.
+
 ## [0.3.0] — 2026-11-13
 
 ### Added

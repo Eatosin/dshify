@@ -19,10 +19,17 @@ window.__ModuleLoader__.load({
       scan: 'Scan',
       plan: 'Plan',
       check: 'Check',
+      apply: 'Apply',
+      confirmTitle: 'Apply writes files',
+      confirmBody:
+        'This writes the DSH surface and the lockfile into the destination. It never deletes user files. Conflicts are reported and kept. Use a test branch if you are unsure.',
+      confirmApply: 'Confirm apply',
+      cancel: 'Cancel',
+      planNote: 'Tip: run Plan first and review the findings before you apply.',
       running: 'Running',
       error: 'Request failed',
-      readOnly:
-        'Apply is not available in this panel yet. Use the migrate_harness tool or /migrate apply in chat.',
+      note:
+        'Apply needs confirmation. Conflicts are preserved, and force is not available in this panel.',
       findings: 'Findings',
       artifacts: 'Artifacts',
       summary: 'Summary',
@@ -67,6 +74,7 @@ window.__ModuleLoader__.load({
         color: palette.text, background: palette.surfaceAlt, border: `0.5px solid ${palette.border}`,
       },
       primary: { background: palette.accent, color: '#fff', border: 'none' },
+      danger: { background: palette.error, color: '#fff', border: 'none' },
       banner: { padding: '9px 12px', borderRadius: '8px', fontSize: '12px', lineHeight: '18px' },
       chips: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
       chip: {
@@ -160,12 +168,18 @@ window.__ModuleLoader__.load({
       const [running, setRunning] = useState('');
       const [result, setResult] = useState(null);
       const [error, setError] = useState('');
+      const [confirmOpen, setConfirmOpen] = useState(false);
 
       const run = useCallback(async (action) => {
         setRunning(action);
         setError('');
         try {
-          const body = { action, dest: dest.trim() === '' ? undefined : dest.trim(), presets };
+          const body = {
+            action,
+            dest: dest.trim() === '' ? undefined : dest.trim(),
+            presets,
+            confirm: action === 'apply' ? true : undefined,
+          };
           if (repo.trim() !== '') body.path = repo.trim();
           setResult(await request(body));
         } catch (caught) {
@@ -200,8 +214,46 @@ window.__ModuleLoader__.load({
             h('input', { type: 'checkbox', checked: presets, onChange: (event) => setPresets(event.target.checked) }),
             t('presets'),
           ),
-          h('div', { style: styles.buttons }, button('scan', true), button('plan'), button('check')),
+          h('div', { style: styles.buttons },
+            button('scan', true),
+            button('plan'),
+            button('check'),
+            h('button', {
+              key: 'apply',
+              type: 'button',
+              style: { ...styles.button, ...styles.danger, opacity: busy ? 0.6 : 1 },
+              disabled: busy,
+              onClick: () => setConfirmOpen(true),
+            }, running === 'apply' ? `${t('running')} apply…` : t('apply')),
+          ),
         ),
+        confirmOpen
+          ? h('div', { style: styles.card },
+              h('strong', { style: { fontSize: '13px' } }, t('confirmTitle')),
+              h('p', { style: styles.subtitle }, t('confirmBody')),
+              result?.action === 'plan'
+                ? h('div', { style: styles.chips },
+                    h('span', { style: styles.chip }, `${t('artifacts')}: ${(result.artifacts ?? []).length}`),
+                    h('span', { style: styles.chip }, `findings: ${(result.findings ?? []).length}`),
+                  )
+                : h('span', { style: styles.hint }, t('planNote')),
+              h('div', { style: styles.buttons },
+                h('button', {
+                  type: 'button',
+                  style: styles.button,
+                  onClick: () => setConfirmOpen(false),
+                }, t('cancel')),
+                h('button', {
+                  type: 'button',
+                  style: { ...styles.button, ...styles.danger },
+                  onClick: () => {
+                    setConfirmOpen(false);
+                    run('apply');
+                  },
+                }, t('confirmApply')),
+              ),
+            )
+          : null,
         error === ''
           ? null
           : h('div', { style: { ...styles.banner, color: palette.error, background: palette.surface } },
@@ -223,7 +275,7 @@ window.__ModuleLoader__.load({
                 h('pre', { style: styles.pre }, JSON.stringify(result, null, 2)),
               ),
             ),
-        h('p', { style: styles.subtitle }, t('readOnly')),
+        h('p', { style: styles.subtitle }, t('note')),
       );
     }
 

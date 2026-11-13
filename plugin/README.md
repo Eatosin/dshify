@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@eatosin/dshify-plugin.svg)](https://www.npmjs.com/package/@eatosin/dshify-plugin)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/Eatosin/dshify/blob/main/LICENSE)
 
-> **Released.** `@eatosin/dshify-plugin@0.3.0` is live. It tracks engine `0.2.0` (`--delegation`, model routes, preset prefix). Compatibility: DSH `0.2.2-rc.1` and later. The Web panel is read-only; apply stays in the tool and command.
+> **Released.** `@eatosin/dshify-plugin@0.4.0` is live. It tracks engine `0.2.0` (`--delegation`, model routes, preset prefix). Compatibility: DSH `0.2.2-rc.1` and later. The Web panel can apply after an explicit confirmation.
 
 DeepSeek Harness (DSH) plugin for [dshify](https://github.com/Eatosin/dshify). It ports an OpenCode repository to a DSH surface from inside a session.
 
@@ -27,13 +27,13 @@ npm install -g pnpm
 
 ## What it adds
 
-The plugin adds one model-facing tool, one human command, and a read-only Web panel.
+The plugin adds one model-facing tool, one human command, and a Web panel with a confirmed apply.
 
 | Name | Purpose |
 |---|---|
 | `migrate_harness` tool | Run `scan`, `plan`, `apply`, or `check` on a repository. |
 | `/migrate` command | The same actions from the composer. Default action is `plan`. |
-| Web panel | Settings → Plugins → **dshify migration**: repository path, destination, presets, and **Scan** / **Plan** / **Check**. Shows the summary, findings, artifacts and raw JSON. |
+| Web panel | Settings → Plugins → **dshify migration**: repository path, destination, presets, **Scan** / **Plan** / **Check**, and **Apply** behind a confirmation card. Shows the summary, findings, artifacts and raw JSON. |
 
 The tool input:
 
@@ -55,7 +55,7 @@ The tool input:
 
 Open **Settings → Plugins → dshify migration**. The panel runs `scan`, `plan` and `check` against a repository path (empty means the current workspace). It shows the summary, findings, artifact list, and raw JSON.
 
-The panel is read-only. It has no **Apply** button, and its route refuses `apply`. Write the surface with the tool or `/migrate apply`, after you review the plan.
+**Apply** opens a confirmation card first. It writes the destination and the lockfile, reports conflicts, and keeps them. The route requires `confirm: true` and rejects an unconfirmed `apply` with `403`. The panel does not expose `force`; use the tool or `/migrate apply` for that.
 
 ## Command
 
@@ -69,7 +69,7 @@ The panel is read-only. It has no **Apply** button, and its route refuses `apply
 ## Security
 
 - The migration engine is offline. `scan`, `plan`, and `check` never make network calls.
-- `apply` writes files. Use a test branch first.
+- `apply` writes files and needs confirmation in the panel. Use a test branch first.
 - No secret value from the source repository enters the tool output.
 
 ## License

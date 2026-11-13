@@ -10,7 +10,7 @@ Status key: **done** · **next** · **later**
 | 2 | `/migrate` command | done | Defaults to `plan`. |
 | 3 | Plugin manager metadata | done | Locale title/description and icon. |
 | 4 | Read-only Web panel | done | Settings → Plugins → dshify migration: path, dest, presets, scan/plan/check, summary, findings, artifacts, raw JSON. |
-| 5 | Apply from the panel | next | Explicit confirmation, conflict review, and force opt-in. The route must stay explicit about writes. |
+| 5 | Apply from the panel | done | Confirmation card; the route requires `confirm: true`. Conflicts are reported and kept; `force` is not exposed. |
 | 6 | Artifact diff preview | next | Show planned bytes against the current destination before apply. |
 | 7 | Panel config schema | next | Persist default destination, presets, and repository path in the plugin Config. |
 | 8 | Live discovery check | later | Reuse `--verify-live` when it lands; keep the offline check as default. |
