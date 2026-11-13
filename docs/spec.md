@@ -152,6 +152,7 @@ Destination layout (all under `dest`, default `.dsh/`):
 .dsh/skills/<id>/**              referenced resources, copied with the skill
 .dsh/harness/package.json        only with --presets
 .dsh/harness/cordis.patch.yml    only with --presets
+.dsh/harness/PLUGINS.md          only with --presets and a plugin surface
 .dshify.lock.json                ownership + drift record (repo root)
 ```
 
@@ -161,6 +162,7 @@ Frontmatter emitted (exact key order, deterministic):
 ---
 name: <id>                      # kebab-case; equals directory
 description: <single line>      # required
+whenToUse: <single line>        # source value, else the description
 disable-model-invocation: true # command skills only
 user-invocable: true           # always
 ---
@@ -177,12 +179,16 @@ Mapping rules:
 | Subagent + `--presets` | persona skill **and** preset row | adapted→exact for tool policy | `edit: deny` → `tool-fs` `write/edit/applyPatch: false` |
 | MCP server | `.dsh/harness/cordis.patch.yml` row | adapted | disabled preserved; auth constructs become `manual` and force `disabled: true` |
 | `AGENTS.md` | not touched | exact | DSH loads it natively |
-| Plugin / custom tools | nothing | unsupported | report `PLUGIN_UNSUPPORTED`; never execute |
+| Plugin / custom tools | static list in `PLUGINS.md` | manual | report `PLUGIN_UNSUPPORTED`; never execute |
+| Skill `whenToUse` | frontmatter | exact | falls back to the description |
+| MCP `env` / `environment` / `cwd` | row fields | adapted | secret keys and values dropped |
+| `opencode.json` `instructions[]` beyond AGENTS.md | not loaded | manual | `INSTRUCTIONS_EXTRA_UNMAPPED` |
+| Persona `model:` + a `--model-map` route | `agentOptions` on the delegation tool | adapted | unmapped hints report `MODEL_ROUTE_UNMAPPED` |
 
 Command skill bodies (deterministic, so goldens pin them):
 
 1. A `# /<name>` heading.
-2. When `agent:` / `subagent:` names a persona that is also being converted, the routing line `Start by loading the \`<id>\` skill.`
+2. When `agent:` / `subagent:` names a converted persona: with delegation, `Delegate this task with the \`subagent_<id>\` tool.` plus the skill fallback; otherwise `Start by loading the \`<id>\` skill.`
 3. When the source uses `$ARGUMENTS` or `$N`, the argument paragraph: `The text you type after the \`/<name>\` token is this command's argument.` followed by `If it is empty, ask for it before proceeding.`
 4. `$N` placeholders are additionally documented as one prose line per index, after the argument paragraph.
 5. The source body, with `$ARGUMENTS` replaced by `the argument` and each shell injection replaced by a fenced `shell (not executed)` block. No placeholder token reaches the model.
@@ -206,9 +212,14 @@ Skill-root strategy:
 
 Preset emission (`--presets`):
 
-- One `@deepseek-ai/dsh-agent-preset` row per persona, `config.id` = persona id, persona body as the `@deepseek-ai/dsh-persona` prefix, and the standard tool/compaction/delegation groups from DSH's shipped `standard` preset.
-- Read-only personas set `tool-fs` `{ read: true, write: false, edit: false, applyPatch: false }`.
-- The bundle manifest declares `dsh.bundle.patch` and no dependencies; dshify never installs it.
+- One `@deepseek-ai/dsh-agent-preset` row per persona. `config.id` is `<prefix><persona-id>`; the persona body is the `@deepseek-ai/dsh-persona` prefix. Child presets carry no delegation group.
+- Read-only personas set `tool-fs` `{ read: true, write: false, edit: false, applyPatch: false }` and mount no delegation, so they cannot start a writable child.
+- `--preset-prefix` namespaces Loader row ids and `config.id`. It is required when two generated harnesses share one profile.
+- `--delegation` adds a parent preset (`<prefix>main`) with a standard toolset, one `@deepseek-ai/dsh-tool-subagent` row per persona (`agentPreset` plus optional `agentOptions` from `--model-map`), and `allowedAgentPresets` on the generic `subagent` tool. MCP rows move to the parent preset.
+- `--model-map` is a JSON object keyed by persona id with `{ provider, model, tool? }`. Provider and model appear together. `tool` defaults to `subagent_<persona>`.
+- `--extra-plugin` adds one bundle-local row per specifier, relative to `cordis.patch.yml`. The plugin file is user-authored; dshify never writes it.
+- The bundle patch is a **top-level YAML array** of loader patch entries. The manifest package name derives from the repository directory; it declares `dsh.bundle.patch` and no dependencies. dshify never installs it.
+- Presets are profile-global. Generated output reports `PRESET_PROFILE_GLOBAL` and never overrides `agent-preset-registry.default`.
 
 ## 8. Verification contract
 

@@ -14,10 +14,11 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | `skills/` | extra skills | only when listed in `opencode.json` `skills[]` |
 | `.agents/skills/<id>/SKILL.md` | installed third-party skills | only when listed in `skills[]` (common convention) |
 | `.opencode/vendor/**` | cloned suites, often gitignored | only when listed in `skills[]` |
-| `opencode.json` | model, default agent, skill roots, MCP servers, permissions | — |
+| `.opencode/opencode.json` | project config (V2 spelling): model, skill roots, MCP servers, permissions | automatic |
+| `opencode.json` | project config (older spelling) | automatic fallback |
 | `AGENTS.md` | workspace instructions | automatic |
 
-`dshify` reads `opencode.json` for `skills[]` and `mcp.servers`; it treats the four default locations as roots even when not listed (matching OpenCode's own convention), and reports them as `rootKind: "default"` or `"configured"`.
+`dshify` reads the project config for `skills[]` and `mcp.servers`; it treats the four default locations as roots even when not listed (matching OpenCode's own convention), and reports them as `rootKind: "default"` or `"configured"`. Config discovery tries `.opencode/opencode.json` first, then `opencode.json`. When both exist, the project-directory file wins and the scan reports `CONFIG_PRECEDENCE`.
 
 ## 2. Capability matrix
 
@@ -47,6 +48,7 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | `AGENTS.md` | untouched (DSH loads it) | `exact` | `AGENTS_MD_SHARED` (info) |
 | `CLAUDE.md` | untouched (DSH loads it as workspace instructions) | `exact` | `CLAUDE_MD_SHARED` (info) |
 | OpenCode plugin / custom tools | nothing (never executed) | `unsupported` | `PLUGIN_UNSUPPORTED` (warning) |
+| Both config files exist | `.opencode/opencode.json` wins | `adapted` | `CONFIG_PRECEDENCE` (info) |
 | Unknown `opencode.json` / frontmatter keys | ignored, listed | `unsupported` | `UNKNOWN_FIELD` (warning) |
 | Malformed or unreadable `opencode.json` | scan continues with defaults | `unsupported` | `MALFORMED_CONFIG` (error) |
 | Command with no single-line `description` or a non-kebab filename | not emitted | `unsupported` | `MALFORMED_COMMAND` (error) |
@@ -54,6 +56,14 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | MCP server name outside `[A-Za-z0-9_-]{1,32}` | skipped | `unsupported` | `MCP_INVALID_NAME` (error) |
 | Resource file unreadable, or larger than the size limit | not copied | `unsupported` | `RESOURCE_READ_FAILED` (error) |
 | MCP server when `--presets` is not given | not emitted; reported as manual | `manual` | `MCP_PRESETS_REQUIRED` (info) |
+| Emitted patch is not a top-level array, or repeats a row id or preset id | rejected by `check` | `unsupported` | `BUNDLE_PATCH_INVALID` (error) |
+| Skill `whenToUse` | preserved; falls back to the description | `exact` | — |
+| MCP `env` / `environment` and `cwd` | row `env` / `cwd`; secret keys and values dropped | `adapted` | — |
+| `opencode.json` `instructions[]` beyond AGENTS.md | not loaded | `manual` | `INSTRUCTIONS_EXTRA_UNMAPPED` (warning) |
+| Plugin tool declarations | static list in `.dsh/harness/PLUGINS.md`; never executed | `manual` | `PLUGIN_UNSUPPORTED` (warning) |
+| Persona `model:` with `--delegation` and a route | `agentOptions` on the named delegation tool | `adapted` | — |
+| Persona `model:` without a DSH route | not applied | `manual` | `MODEL_ROUTE_UNMAPPED` (warning) |
+| Generated presets in a profile | profile-global; select the parent preset per session | `adapted` | `PRESET_PROFILE_GLOBAL` (info) |
 
 ## 3. Skills
 

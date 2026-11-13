@@ -43,6 +43,10 @@ The tool input:
 | `path` | string | `.` | Repository path. Relative paths use the session working directory. |
 | `dest` | string | `.dsh` | Destination tree inside the repository. |
 | `presets` | boolean | `false` | Also emit the `.dsh/harness/` preset bundle. |
+| `delegation` | boolean | `false` | Emit a parent preset with model-routed child tools. Requires `presets`. |
+| `presetPrefix` | string | none | Namespace for generated preset ids, for example `agency-`. |
+| `modelMap` | object | none | Persona id to `{ provider, model, tool }`. Requires `delegation`. |
+| `extraPlugins` | string[] | none | Bundle-local plugin specifiers relative to `cordis.patch.yml`. |
 | `force` | boolean | `false` | Replace human-edited artifacts during `apply`. |
 
 `apply` writes only inside `dest` and the lockfile. It never deletes user files. If a file is not owned by dshify, `apply` reports a conflict.
@@ -58,6 +62,7 @@ The panel is read-only. It has no **Apply** button, and its route refuses `apply
 ```text
 /migrate plan                 # show the conversion plan
 /migrate apply . --presets    # write the surface and the preset bundle
+/migrate apply . --presets --delegation --preset-prefix agency-  # parent preset with routes
 /migrate check                # verify files, lockfile and DSH discovery
 ```
 

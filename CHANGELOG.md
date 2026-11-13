@@ -2,6 +2,51 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.2.0] — 2026-11-13
+
+### Added
+
+- Parent preset emission: `--delegation` adds a preset that starts each
+  converted persona through a named `@deepseek-ai/dsh-tool-subagent` row with
+  `agentPreset` and `agentOptions`. Child presets stay free of delegation, so a
+  child cannot recurse into another writable worker.
+- `--model-map <file>`: explicit persona-to-DSH-route map. DSH routes differ
+  from OpenCode routes, so the mapping cannot be inferred. Unmapped personas
+  with a source `model:` hint report `MODEL_ROUTE_UNMAPPED`.
+- `--preset-prefix <prefix>`: namespaces Loader row ids, preset `config.id`, and
+  `agentPreset` references, so two generated harnesses can share one profile.
+- `--extra-plugin <specifier>`: bundle-local plugin rows, relative to
+  `cordis.patch.yml`. The plugin file stays user-authored.
+- The bundle package name derives from the repository directory, for example
+  `agency-os-dsh-harness`.
+- `whenToUse` is preserved from source frontmatter and falls back to the
+  description. Command skills with an `agent:` target route to the named
+  delegation tool when delegation is on.
+- MCP `env` and `cwd` pass through. The adapter reads both the OpenCode `env`
+  and `environment` spellings and drops secret-looking keys and values.
+- Plugin port manifest: `.dsh/harness/PLUGINS.md` lists each plugin surface and
+  its statically extracted tools. Source plugins are never loaded or executed.
+- New finding codes: `INSTRUCTIONS_EXTRA_UNMAPPED`, `MODEL_ROUTE_UNMAPPED`,
+  `PRESET_PROFILE_GLOBAL`, `CONFIG_PRECEDENCE`, `BUNDLE_PATCH_INVALID`.
+
+### Fixed
+
+- `cordis.patch.yml` was a mapping. DSH requires a top-level YAML array of
+  loader patch entries, so every generated bundle failed to install.
+- OpenCode project config was read only from `<root>/opencode.json`. The adapter
+  now reads `.opencode/opencode.json` first and reports `CONFIG_PRECEDENCE` when
+  both exist.
+- `check` skipped `bundle-patch` artifacts. It now parses the installed patch,
+  requires the array root, and rejects duplicate row and preset ids (exit 4).
+- Read-only persona presets no longer mount the delegation group.
+
+### Notes
+
+- Tests: 170 passed (was 154). Typecheck green.
+- Additive JSON change: `schemaVersion` stays `1`.
+- Plugin `@eatosin/dshify-plugin` 0.3.0 accepts the new fields and depends on
+  this engine.
+
 ## [0.1.3] — 2026-11-09
 
 ### Added

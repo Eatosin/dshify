@@ -31,12 +31,36 @@ dshify <command> [path] [flags]
 | `--lockfile <path>` | `.dshify.lock.json` | Lockfile path, repo-relative. |
 | `--strategy <mode>` | `copy` | `copy` or `link` for skills outside `.agents/skills`. |
 | `--presets` | off | Also emit `.dsh/harness/` (manifest + `cordis.patch.yml` with persona and MCP rows). |
+| `--delegation` | off | With `--presets`, also emit a parent preset with one model-routed subagent tool per persona. |
+| `--preset-prefix <prefix>` | none | Namespace for generated preset ids (for example `agency-`). Required for two harnesses in one profile. |
+| `--model-map <file>` | none | JSON file: persona id to `{ provider, model, tool }`. Requires `--delegation`. |
+| `--extra-plugin <specifier>` | — | Extra bundle-local plugin row, relative to `cordis.patch.yml` (repeatable). The plugin file is user-authored. |
 | `--force` | off | Overwrite conflicting artifacts (reports `FORCED`). |
 | `--verify-live` | off | Experimental: probe the local `dsh` binary with a temp `DSH_HOME`. |
 | `--no-color` | auto | Disable ANSI (also honors `NO_COLOR`). |
 | `--help`, `--version` | — | Usage / version. |
 
 `--root` is additive to the roots the adapter already reads from source config.
+
+The v0.2 preset flags produce a parent preset. Example:
+
+```bash
+dshify apply . --presets --delegation --preset-prefix agency- \
+  --model-map .dsh/model-map.json --extra-plugin ./tools/index.js
+```
+
+The model map is explicit because DSH model routes differ from OpenCode routes:
+
+```json
+{
+  "planner": { "provider": "deepseek-official", "model": "deepseek-v4-pro" },
+  "implementer": { "provider": "deepseek-official", "model": "deepseek-flash" }
+}
+```
+
+Unknown keys are reported as `MODEL_ROUTE_UNMAPPED`. `tool` defaults to
+`subagent_<persona>`. Each route becomes a `@deepseek-ai/dsh-tool-subagent` row
+with `agentPreset` and `agentOptions`.
 
 ## Exit codes
 

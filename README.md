@@ -21,6 +21,31 @@ dshify has five commands:
 
 `apply` is the only writer. It is idempotent: a second run changes nothing.
 
+### Presets with model-routed delegation (v0.2)
+
+`--presets` emits one preset per converted persona. Add `--delegation` to emit a
+parent preset that can start them, with a named tool per persona:
+
+```bash
+dshify apply . --presets --delegation --preset-prefix agency- \
+  --model-map .dsh/model-map.json --extra-plugin ./tools/index.js
+```
+
+`--model-map` is explicit because DSH routes differ from OpenCode routes:
+
+```json
+{
+  "planner": { "provider": "deepseek-official", "model": "deepseek-v4-pro" },
+  "implementer": { "provider": "deepseek-official", "model": "deepseek-flash" }
+}
+```
+
+Each route becomes a `@deepseek-ai/dsh-tool-subagent` row with `agentPreset` and
+`agentOptions`. Read-only personas get `tool-fs` write/edit false and no
+delegation group. `--extra-plugin` adds a bundle-local plugin row; the plugin file
+stays yours. Plugin surfaces are never executed; they are listed in
+`.dsh/harness/PLUGINS.md` for a manual port.
+
 ## Demo
 
 The GIF shows one run on a small OpenCode repository. Run the same demo:

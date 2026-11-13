@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0] — 2026-11-13
+
+### Added
+
+- `migrate_harness` accepts `delegation`, `presetPrefix`, `modelMap`, and
+  `extraPlugins`, matching engine 0.2.0.
+- `/migrate` accepts `--delegation` and `--preset-prefix <prefix>`.
+
+### Changed
+
+- Dependency: `@eatosin/dshify` `^0.2.0`.
+
 ## [0.2.0] — 2026-11-09
 
 ### Added
