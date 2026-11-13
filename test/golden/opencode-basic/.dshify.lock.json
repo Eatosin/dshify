@@ -47,7 +47,7 @@
     {
       "path": ".dsh/skills/demo-skill/SKILL.md",
       "kind": "skill",
-      "sha256": "ab7029eb067f0ed127eef344c38a7bd38f7e5d9adbb4d3b33f19e39b82d9cbc3",
+      "sha256": "c671cae5222577cd3faf1934a6d61d6a560a85f09ccd51b92742c50e6edabd87",
       "sources": [
         {
           "path": ".opencode/skills/demo-skill/SKILL.md",
@@ -69,7 +69,7 @@
     {
       "path": ".dsh/skills/extra-skill/SKILL.md",
       "kind": "skill",
-      "sha256": "87396922829370bd89f5bdb313c7f56e0ea60c03200853e06107b1fb03377e30",
+      "sha256": "7da09f82a653faeb21233ffec7c3b5021da67e0f9e8d4b49961e40b388cb2e1b",
       "sources": [
         {
           "path": "skills/extra-skill/SKILL.md",
@@ -80,7 +80,7 @@
     {
       "path": ".dsh/skills/hello/SKILL.md",
       "kind": "command-skill",
-      "sha256": "3f9d140c91d3934df1dcac85265f9898dd9dc8b2e411ee991b3d6c21dbeade5f",
+      "sha256": "5deb5a9e579b53a39684cb514e9c14ccc214d256b36b7ce522c47b7f69b3a0b4",
       "sources": [
         {
           "path": ".opencode/commands/hello.md",
@@ -91,7 +91,7 @@
     {
       "path": ".dsh/skills/reviewer/SKILL.md",
       "kind": "persona-skill",
-      "sha256": "a3a2cae9583517763d4b3e0fbbbd55d3297ed427c09cc2e87a58c8ed05329bf1",
+      "sha256": "a8cf036f115c9264ced5a2c4122e6537fa0b9bb42d3b0687bc495d3e8f1a7650",
       "sources": [
         {
           "path": ".opencode/agents/reviewer.md",

@@ -75,6 +75,8 @@ export const SkillSchema = z
   .object({
     id: z.string().regex(KEBAB_CASE),
     description: z.string().min(1),
+    /** Optional discovery hint preserved from the source frontmatter. */
+    whenToUse: z.string().min(1).optional(),
     body: z.string(),
     invocation: InvocationSchema,
     /** Paths relative to the skill directory, sorted. */
@@ -137,6 +139,10 @@ export const McpServerSchema = z
     command: z.string().min(1).optional(),
     args: z.array(z.string()).optional(),
     url: z.string().min(1).optional(),
+    /** Non-secret environment variables for a stdio server. */
+    env: z.record(z.string(), z.string()).optional(),
+    /** Working directory for a stdio server. */
+    cwd: z.string().min(1).optional(),
     auth: McpAuthSchema,
     disabled: z.boolean(),
     provenance: ProvenanceSchema,
@@ -156,6 +162,7 @@ export const ARTIFACT_KINDS = [
   'skill-resource',
   'bundle-manifest',
   'bundle-patch',
+  'port-manifest',
 ] as const;
 export const ArtifactKindSchema = z.enum(ARTIFACT_KINDS);
 export type ArtifactKind = z.infer<typeof ArtifactKindSchema>;
@@ -183,6 +190,18 @@ export interface PlannedOutput {
   readonly conflicts: readonly Conflict[];
 }
 
+export const PluginSurfaceSchema = z
+  .object({
+    path: z.string().min(1),
+    tools: z.array(
+      z
+        .object({ name: z.string().min(1), description: z.string() })
+        .strict(),
+    ),
+  })
+  .strict();
+export type PluginSurface = z.infer<typeof PluginSurfaceSchema>;
+
 export const HarnessIRSchema = z
   .object({
     harness: z.literal('opencode'),
@@ -203,6 +222,10 @@ export const HarnessIRSchema = z
           .strict(),
       )
       .optional(),
+    /** Plugin surfaces found statically; never loaded or executed. */
+    pluginSurfaces: z.array(PluginSurfaceSchema).optional(),
+    /** `opencode.json` `instructions[]` entries DSH does not load. */
+    extraInstructions: z.array(z.string().min(1)).optional(),
     /** Scan-time findings; plan adds the loss/conflict report. */
     warnings: z.array(FindingSchema),
   })

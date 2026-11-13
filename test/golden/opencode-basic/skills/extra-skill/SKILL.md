@@ -1,6 +1,7 @@
 ---
 name: extra-skill
 description: Skill that lives in an extra configured root.
+whenToUse: Skill that lives in an extra configured root.
 user-invocable: true
 ---
 

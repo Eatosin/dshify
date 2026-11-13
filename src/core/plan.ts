@@ -3,7 +3,7 @@ import type { Conflict, HarnessIR, PlannedOutput } from './ir.js';
 import { DshifyError } from './errors.js';
 import { isInside, repoRelative } from './paths.js';
 import { finding, sortFindings } from './report.js';
-import { planDshBundle } from '../emit/dsh/bundle.js';
+import { planDshBundle, type DelegationRoute, type MainPresetSpec } from '../emit/dsh/bundle.js';
 import { planDshSkills } from '../emit/dsh/skills.js';
 
 /**
@@ -27,6 +27,16 @@ export interface PlanOptions {
   readonly readResource: (absolute: string) => Promise<Uint8Array>;
   /** Bundle manifest version; defaults to `0.0.0` for library callers. */
   readonly version?: string;
+  /** Namespace for generated preset ids. */
+  readonly presetPrefix?: string;
+  /** Parent-preset delegation routes; presence enables the v0.2 parent preset. */
+  readonly delegation?: readonly DelegationRoute[];
+  /** Display identity of the parent preset. */
+  readonly mainPreset?: MainPresetSpec;
+  /** Extra bundle-local plugin specifiers, relative to the patch file. */
+  readonly extraPlugins?: readonly string[];
+  /** Package name for the generated bundle. */
+  readonly bundleName?: string;
 }
 
 /** Resolve and validate the destination tree inside the repository. */
@@ -53,10 +63,15 @@ export async function planRepo(ir: HarnessIR, options: PlanOptions): Promise<Pla
   }
 
   const dest = resolveDest(options.repoRoot, options.dest);
+  const delegationTools =
+    options.delegation === undefined
+      ? undefined
+      : new Map(options.delegation.map((route) => [route.persona, route.tool]));
   const emitted = await planDshSkills(ir, {
     dest,
     repoRoot: options.repoRoot,
     readResource: options.readResource,
+    ...(delegationTools === undefined ? {} : { delegationTools }),
   });
 
   const artifacts = [...emitted.artifacts];
@@ -65,7 +80,13 @@ export async function planRepo(ir: HarnessIR, options: PlanOptions): Promise<Pla
   if (options.presets) {
     const bundle = planDshBundle(ir, {
       dest,
+      repoRoot: options.repoRoot,
       version: options.version ?? '0.0.0',
+      ...(options.presetPrefix === undefined ? {} : { presetPrefix: options.presetPrefix }),
+      ...(options.delegation === undefined ? {} : { delegation: options.delegation }),
+      ...(options.mainPreset === undefined ? {} : { mainPreset: options.mainPreset }),
+      ...(options.extraPlugins === undefined ? {} : { extraPlugins: options.extraPlugins }),
+      ...(options.bundleName === undefined ? {} : { bundleName: options.bundleName }),
     });
     artifacts.push(...bundle.artifacts);
     losses.push(...bundle.losses);

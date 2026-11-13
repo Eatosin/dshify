@@ -55,6 +55,26 @@ describe('cli surface', () => {
     expect(c.err()).toContain('unknown command "frobnicate"');
   });
 
+  it('rejects delegation without presets', async () => {
+    const c = capture();
+    expect(await run(['plan', '--delegation'], c.io, { cwd })).toBe(2);
+    expect(c.err()).toContain('--delegation requires --presets');
+  });
+
+  it('rejects a model map without delegation', async () => {
+    const c = capture();
+    expect(await run(['plan', '--model-map', 'map.json'], c.io, { cwd })).toBe(2);
+    expect(c.err()).toContain('--model-map requires --delegation');
+  });
+
+  it('lists the v0.2 preset flags in help', async () => {
+    const c = capture();
+    expect(await run(['--help'], c.io, { cwd })).toBe(0);
+    expect(c.out()).toContain('--delegation');
+    expect(c.out()).toContain('--preset-prefix');
+    expect(c.out()).toContain('--model-map');
+  });
+
   it('rejects an unknown flag with exit 2', async () => {
     const c = capture();
     expect(await run(['scan', '--nope'], c.io, { cwd })).toBe(2);

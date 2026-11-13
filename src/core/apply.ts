@@ -64,6 +64,11 @@ export interface ApplyOptions {
   readonly force: boolean;
   readonly version: string;
   readonly readResource: (absolute: string) => Promise<Uint8Array>;
+  readonly presetPrefix?: string;
+  readonly delegation?: readonly import('../emit/dsh/bundle.js').DelegationRoute[];
+  readonly mainPreset?: import('../emit/dsh/bundle.js').MainPresetSpec;
+  readonly extraPlugins?: readonly string[];
+  readonly bundleName?: string;
 }
 
 export interface ApplyResult {
@@ -185,6 +190,11 @@ export async function applyRepo(ir: HarnessIR, options: ApplyOptions): Promise<A
     strategy: options.strategy,
     readResource: options.readResource,
     version: options.version,
+    ...(options.presetPrefix === undefined ? {} : { presetPrefix: options.presetPrefix }),
+    ...(options.delegation === undefined ? {} : { delegation: options.delegation }),
+    ...(options.mainPreset === undefined ? {} : { mainPreset: options.mainPreset }),
+    ...(options.extraPlugins === undefined ? {} : { extraPlugins: options.extraPlugins }),
+    ...(options.bundleName === undefined ? {} : { bundleName: options.bundleName }),
   });
 
   const destRel = resolveDest(options.repoRoot, options.dest);

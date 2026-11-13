@@ -11,6 +11,7 @@ import type {
   McpServer,
   Persona,
   Placeholder,
+  PluginSurface,
   Provenance,
   Skill,
   SourceRootKind,
@@ -88,8 +89,10 @@ const PLACEHOLDER_ORDER: readonly Placeholder[] = ['arguments', 'positional', 's
 
 interface OpenCodeConfig {
   readonly data: Readonly<Record<string, unknown>>;
-  /** Absolute path of `opencode.json`, when it exists. */
+  /** Absolute path of the selected config file, when it exists. */
   readonly path: string | null;
+  /** Repo-relative path of the selected config file; used in findings. */
+  readonly relPath: string;
   readonly sha256: string | null;
 }
 
@@ -183,12 +186,33 @@ function fileProblem(
 // config
 // --------------------------------------------------------------------------
 
+const CONFIG_CANDIDATES = (root: string): string[] => [
+  path.join(root, '.opencode', 'opencode.json'),
+  path.join(root, 'opencode.json'),
+];
+
 async function readConfig(input: ScanInput, warnings: Finding[]): Promise<OpenCodeConfig> {
-  const absolute = path.join(input.root, 'opencode.json');
-  if (!(await isFile(absolute))) {
-    return { data: {}, path: null, sha256: null };
+  const existing: string[] = [];
+  for (const candidate of CONFIG_CANDIDATES(input.root)) {
+    if (await isFile(candidate)) existing.push(candidate);
   }
+  if (existing.length === 0) {
+    return { data: {}, path: null, relPath: 'opencode.json', sha256: null };
+  }
+  // OpenCode V2 reads the project config from `.opencode/opencode.json`; a
+  // repository-root `opencode.json` is the older spelling. When both exist, the
+  // project-directory file wins and the ambiguity is reported.
+  const absolute = existing[0]!;
   const rel = repoRelative(input.root, absolute);
+  if (existing.length > 1) {
+    warnings.push(
+      finding(
+        'CONFIG_PRECEDENCE',
+        `${rel} is used; ${repoRelative(input.root, existing[1]!)} is ignored when both config files exist`,
+        { path: rel, capability: 'adapted' },
+      ),
+    );
+  }
   const canonical = await canonicalize(absolute);
   const sha256 = await sha256OfFile(absolute, input.limits);
 
@@ -202,7 +226,7 @@ async function readConfig(input: ScanInput, warnings: Finding[]): Promise<OpenCo
       throw DshifyError.scanFailed(`cannot read ${absolute}: ${detail}`);
     }
     warnings.push(finding('MALFORMED_CONFIG', problem.message, { path: rel }));
-    return { data: {}, path: canonical, sha256 };
+    return { data: {}, path: canonical, relPath: rel, sha256 };
   }
 
   let parsed: unknown;
@@ -211,13 +235,13 @@ async function readConfig(input: ScanInput, warnings: Finding[]): Promise<OpenCo
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     warnings.push(finding('MALFORMED_CONFIG', `invalid JSON: ${detail}`, { path: rel }));
-    return { data: {}, path: canonical, sha256 };
+    return { data: {}, path: canonical, relPath: rel, sha256 };
   }
   if (!isRecord(parsed)) {
     warnings.push(finding('MALFORMED_CONFIG', 'root value must be an object', { path: rel }));
-    return { data: {}, path: canonical, sha256 };
+    return { data: {}, path: canonical, relPath: rel, sha256 };
   }
-  return { data: parsed, path: canonical, sha256 };
+  return { data: parsed, path: canonical, relPath: rel, sha256 };
 }
 
 function readConfiguredRoots(
@@ -230,7 +254,7 @@ function readConfiguredRoots(
   if (!Array.isArray(raw)) {
     warnings.push(
       finding('MALFORMED_CONFIG', '"skills" must be an array of repository-relative paths', {
-        path: 'opencode.json',
+        path: config.relPath,
       }),
     );
     return [];
@@ -240,7 +264,7 @@ function readConfiguredRoots(
     if (typeof entry !== 'string' || entry.trim() === '') {
       warnings.push(
         finding('MALFORMED_CONFIG', 'ignored a non-string entry in "skills"', {
-          path: 'opencode.json',
+          path: config.relPath,
         }),
       );
       continue;
@@ -407,6 +431,17 @@ async function addSkill(args: SkillFileArgs): Promise<void> {
     return;
   }
 
+  const whenToUse =
+    parsed.data.whenToUse === undefined ? undefined : singleLineString(parsed.data.whenToUse);
+  if (parsed.data.whenToUse !== undefined && whenToUse === undefined) {
+    warnings.push(
+      finding('MALFORMED_SKILL', 'frontmatter "whenToUse" must be a single line; ignored', {
+        path: rel,
+        capability: 'adapted',
+      }),
+    );
+  }
+
   const disableRaw = parsed.data['disable-model-invocation'];
   const disableModel = disableRaw === undefined ? false : coerceStrictBoolean(disableRaw);
   if (disableModel === undefined) {
@@ -455,6 +490,7 @@ async function addSkill(args: SkillFileArgs): Promise<void> {
   out.push({
     id: nameValue,
     description,
+    ...(whenToUse === undefined ? {} : { whenToUse }),
     body: parsed.body,
     invocation: { model: !disableModel, user: userInvocable },
     resources,
@@ -873,7 +909,7 @@ async function scanMcp(
     if (!MCP_NAME.test(name)) {
       warnings.push(
         finding('MCP_INVALID_NAME', `MCP server name "${name}" must match [A-Za-z0-9_-]{1,32}; skipped`, {
-          path: 'opencode.json',
+          path: config.relPath,
           capability: 'unsupported',
         }),
       );
@@ -883,7 +919,7 @@ async function scanMcp(
     if (!isRecord(raw)) {
       warnings.push(
         finding('MALFORMED_CONFIG', `MCP server "${name}" is not an object; skipped`, {
-          path: 'opencode.json',
+          path: config.relPath,
         }),
       );
       continue;
@@ -899,7 +935,7 @@ async function scanMcp(
       if (typeof raw.url !== 'string' || raw.url === '') {
         warnings.push(
           finding('MALFORMED_CONFIG', `remote MCP server "${name}" has no url; skipped`, {
-            path: 'opencode.json',
+            path: config.relPath,
           }),
         );
         continue;
@@ -908,7 +944,7 @@ async function scanMcp(
       url = raw.url;
       warnings.push(
         finding('MCP_REMOTE', `MCP server "${name}" is remote (streamable-http)`, {
-          path: 'opencode.json',
+          path: config.relPath,
           capability: 'adapted',
         }),
       );
@@ -919,7 +955,7 @@ async function scanMcp(
         if (typeof executable !== 'string' || executable === '') {
           warnings.push(
             finding('MALFORMED_CONFIG', `local MCP server "${name}" has an invalid command; skipped`, {
-              path: 'opencode.json',
+              path: config.relPath,
             }),
           );
           continue;
@@ -931,7 +967,7 @@ async function scanMcp(
       } else {
         warnings.push(
           finding('MALFORMED_CONFIG', `local MCP server "${name}" has no command; skipped`, {
-            path: 'opencode.json',
+            path: config.relPath,
           }),
         );
         continue;
@@ -939,18 +975,29 @@ async function scanMcp(
       transport = 'stdio';
       warnings.push(
         finding('MCP_STDIO', `MCP server "${name}" is local (stdio)`, {
-          path: 'opencode.json',
+          path: config.relPath,
           capability: 'adapted',
         }),
       );
     } else {
       warnings.push(
         finding('MALFORMED_CONFIG', `MCP server "${name}" has no recognized transport; skipped`, {
-          path: 'opencode.json',
+          path: config.relPath,
         }),
       );
       continue;
     }
+
+    const envRaw = isRecord(raw.env) ? raw.env : isRecord(raw.environment) ? raw.environment : undefined;
+    const env: Record<string, string> = {};
+    if (envRaw !== undefined) {
+      for (const [key, value] of Object.entries(envRaw)) {
+        if (typeof value !== 'string' || value === '') continue;
+        if (SECRET_KEY.test(key) || hasSecretValue(value)) continue;
+        env[key] = value;
+      }
+    }
+    const cwd = typeof raw.cwd === 'string' && raw.cwd !== '' ? raw.cwd : undefined;
 
     const auth = detectAuth(raw);
     let disabled = raw.disabled === true;
@@ -962,14 +1009,14 @@ async function scanMcp(
         finding(
           'MCP_AUTH_MANUAL',
           `MCP server "${name}" uses ${auth} auth; emitted disabled with a redacted secret and manual follow-up`,
-          { path: 'opencode.json', capability: 'manual' },
+          { path: config.relPath, capability: 'manual' },
         ),
       );
     }
     if (disabled) {
       warnings.push(
         finding('MCP_DISABLED', `MCP server "${name}" stays disabled`, {
-          path: 'opencode.json',
+          path: config.relPath,
           capability,
         }),
       );
@@ -981,6 +1028,8 @@ async function scanMcp(
       ...(command === undefined ? {} : { command }),
       ...(args === undefined ? {} : { args }),
       ...(url === undefined ? {} : { url }),
+      ...(Object.keys(env).length === 0 ? {} : { env }),
+      ...(cwd === undefined ? {} : { cwd }),
       auth,
       disabled,
       provenance: {
@@ -1037,18 +1086,45 @@ async function scanIncludeFiles(
   return agentsMd;
 }
 
-async function scanPlugins(input: ScanInput, warnings: Finding[]): Promise<void> {
-  for (const candidate of ['.opencode/plugin', '.opencode/plugins', 'plugins', 'tools']) {
+const PLUGIN_DIRS = ['.opencode/plugin', '.opencode/plugins', 'plugins', 'tools'] as const;
+const PLUGIN_TOOL = /\bname:\s*['"]([a-z][a-z0-9_]*)['"]\s*,\s*description:\s*(['"])([\s\S]*?)\2/g;
+
+async function scanPlugins(input: ScanInput, warnings: Finding[]): Promise<PluginSurface[]> {
+  const surfaces: PluginSurface[] = [];
+  for (const candidate of PLUGIN_DIRS) {
     const absolute = path.join(input.root, candidate);
-    if (!(await isFile(absolute)) && !(await isDirectory(absolute))) continue;
+    const file = await isFile(absolute);
+    if (!file && !(await isDirectory(absolute))) continue;
+
+    const tools: Array<{ name: string; description: string }> = [];
+    if (!file) {
+      for (const entry of await listDirect(absolute)) {
+        checkAbort(input);
+        if (!entry.isFile() || !/\.(?:ts|js|mjs|cjs)$/i.test(entry.name)) continue;
+        try {
+          const text = await readSourceText(path.join(absolute, entry.name), input.limits);
+          for (const match of text.matchAll(PLUGIN_TOOL)) {
+            const name = match[1];
+            const description = match[3];
+            if (name === undefined || description === undefined) continue;
+            tools.push({ name, description: description.replace(/\s+/g, ' ').trim() });
+          }
+        } catch {
+          // A file that cannot be read is reported by its own scan findings.
+        }
+      }
+    }
+    tools.sort((a, b) => cmp(a.name, b.name));
     warnings.push(
       finding(
         'PLUGIN_UNSUPPORTED',
-        `${candidate} is a plugin/custom-tool surface; it is reported and never loaded or executed`,
+        `${candidate} is a plugin/custom-tool surface; it is reported and never loaded or executed (${tools.length} tool(s) listed statically)`,
         { path: candidate, capability: 'unsupported' },
       ),
     );
+    surfaces.push({ path: candidate, tools });
   }
+  return surfaces;
 }
 
 // --------------------------------------------------------------------------
@@ -1064,6 +1140,24 @@ export async function scanOpencode(input: ScanInput): Promise<HarnessIR> {
   const mcpServers: McpServer[] = [];
 
   const config = await readConfig(input, warnings);
+  const extraInstructions: string[] = [];
+  if (Array.isArray(config.data.instructions)) {
+    for (const entry of config.data.instructions) {
+      if (typeof entry !== 'string' || entry.trim() === '') continue;
+      const normalized = entry.trim();
+      if (normalized === 'AGENTS.md' || normalized === 'CLAUDE.md') continue;
+      extraInstructions.push(normalized);
+    }
+  }
+  if (extraInstructions.length > 0) {
+    warnings.push(
+      finding(
+        'INSTRUCTIONS_EXTRA_UNMAPPED',
+        `extra instruction files are not loaded by DSH: ${extraInstructions.join(', ')}; fold them into AGENTS.md or add them to the preset\'s instructionFileCandidates`,
+        { path: config.relPath, capability: 'manual' },
+      ),
+    );
+  }
   const roots = await collectSkillRoots(input, config, warnings);
   const nestedSeen = new Set<string>();
   const walkBudget: WalkBudget = { count: 0 };
@@ -1076,7 +1170,7 @@ export async function scanOpencode(input: ScanInput): Promise<HarnessIR> {
   await scanPersonas(input, personas, warnings);
   const agentsMd = await scanIncludeFiles(input, warnings);
   await scanMcp(config, input, mcpServers, warnings);
-  await scanPlugins(input, warnings);
+  const pluginSurfaces = await scanPlugins(input, warnings);
 
   skills.sort((a, b) => cmp(a.id, b.id));
   commands.sort((a, b) => cmp(a.name, b.name));
@@ -1092,6 +1186,8 @@ export async function scanOpencode(input: ScanInput): Promise<HarnessIR> {
     personas,
     mcpServers,
     ...(agentsMd === undefined ? {} : { agentsMd }),
+    ...(pluginSurfaces.length === 0 ? {} : { pluginSurfaces }),
+    ...(extraInstructions.length === 0 ? {} : { extraInstructions }),
     roots: roots.map((root) => ({ path: root.abs, kind: root.kind })),
     warnings: sortFindings(warnings),
   };

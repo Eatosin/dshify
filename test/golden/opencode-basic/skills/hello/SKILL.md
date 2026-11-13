@@ -1,6 +1,7 @@
 ---
 name: hello
 description: Greet a named person.
+whenToUse: Greet a named person.
 disable-model-invocation: true
 user-invocable: true
 ---

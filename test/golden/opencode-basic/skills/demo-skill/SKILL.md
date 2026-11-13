@@ -1,6 +1,7 @@
 ---
 name: demo-skill
 description: Demonstrates a directory skill with a reference file.
+whenToUse: Demonstrates a directory skill with a reference file.
 user-invocable: true
 ---
 

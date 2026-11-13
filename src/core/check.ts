@@ -18,6 +18,7 @@ import {
 import { repoRelative } from './paths.js';
 import { planRepo, resolveDest, type PlanOptions } from './plan.js';
 import { finding, sortFindings } from './report.js';
+import { parse as parseYaml } from 'yaml';
 import { sha256Hex } from './source.js';
 import { verifyDiscovery, type DiscoveryResult } from '../verify/discovery.js';
 
@@ -61,6 +62,61 @@ async function isFile(absolute: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+const JS_TAG = { tag: '!!js', resolve: (value: string): string => value };
+
+/** Validate the emitted loader patch before DSH can reject it at install time. */
+function validateBundlePatch(text: string): string[] {
+  let document: unknown;
+  try {
+    document = parseYaml(text, { customTags: [JS_TAG as never] });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message.split('\n')[0] : String(error);
+    return [`YAML does not parse: ${detail}`];
+  }
+  if (!Array.isArray(document)) {
+    return ['must be a top-level YAML array of loader patch entries'];
+  }
+  const problems: string[] = [];
+  const rowIds = new Set<string>();
+  const presetIds = new Set<string>();
+  for (const entry of document) {
+    if (typeof entry !== 'object' || entry === null) {
+      problems.push('each patch entry must be a mapping');
+      continue;
+    }
+    const rows = (entry as { insert?: unknown }).insert;
+    if (rows === undefined) continue;
+    if (!Array.isArray(rows)) {
+      problems.push('insert must be an array of rows');
+      continue;
+    }
+    for (const row of rows) {
+      if (typeof row !== 'object' || row === null) {
+        problems.push('each row must be a mapping');
+        continue;
+      }
+      const record = row as Record<string, unknown>;
+      const id = record['id'];
+      if (typeof id === 'string') {
+        if (rowIds.has(id)) problems.push(`duplicate row id "${id}"`);
+        rowIds.add(id);
+      }
+      if (record['name'] === '@deepseek-ai/dsh-agent-preset') {
+        const config = record['config'];
+        const presetId =
+          typeof config === 'object' && config !== null
+            ? (config as Record<string, unknown>)['id']
+            : undefined;
+        if (typeof presetId === 'string') {
+          if (presetIds.has(presetId)) problems.push(`duplicate preset config id "${presetId}"`);
+          presetIds.add(presetId);
+        }
+      }
+    }
+  }
+  return problems;
 }
 
 export async function checkRepo(ir: HarnessIR, options: CheckOptions): Promise<CheckResult> {
@@ -167,6 +223,23 @@ export async function checkRepo(ir: HarnessIR, options: CheckOptions): Promise<C
     if (status === 'unchanged') verifiedWellFormed.add(artifact.path);
   }
 
+  for (const artifact of planned.artifacts) {
+    if (artifact.kind !== 'bundle-patch') continue;
+    // Validate the file DSH would install, not the planned bytes: a human edit
+    // is exactly the case this check exists for.
+    let text: string;
+    try {
+      text = await readFile(path.join(options.repoRoot, artifact.path), 'utf8');
+    } catch {
+      continue;
+    }
+    const problems = validateBundlePatch(text);
+    for (const problem of problems) {
+      verificationFailure = true;
+      findings.push(finding('BUNDLE_PATCH_INVALID', problem, { path: artifact.path }));
+    }
+  }
+
   const plannedPaths = new Set(planned.artifacts.map((artifact) => artifact.path));
   for (const priorArtifact of lockfile?.artifacts ?? []) {
     if (plannedPaths.has(priorArtifact.path)) continue;
@@ -212,7 +285,12 @@ export async function checkRepo(ir: HarnessIR, options: CheckOptions): Promise<C
   // must not upgrade a conflict into a verification failure.
   for (const artifact of planned.artifacts) {
     if (!verifiedWellFormed.has(artifact.path)) continue;
-    if (artifact.kind === 'skill-resource' || artifact.kind === 'bundle-manifest' || artifact.kind === 'bundle-patch') {
+    if (
+      artifact.kind === 'skill-resource' ||
+      artifact.kind === 'bundle-manifest' ||
+      artifact.kind === 'bundle-patch' ||
+      artifact.kind === 'port-manifest'
+    ) {
       continue;
     }
     if (visiblePaths.has(artifact.path)) continue;

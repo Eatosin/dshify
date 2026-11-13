@@ -28,6 +28,8 @@ export interface EmitOptions {
   readonly repoRoot: string;
   /** Read one referenced resource file (absolute path). */
   readonly readResource: (absolute: string) => Promise<Uint8Array>;
+  /** Persona id to named delegation tool, when v0.2 delegation is on. */
+  readonly delegationTools?: ReadonlyMap<string, string>;
 }
 
 export interface EmitResult {
@@ -73,8 +75,14 @@ function yamlScalar(value: string): string {
 }
 
 /** Frontmatter in the exact key order from spec §7. */
-function frontmatter(name: string, description: string, disableModel: boolean): string {
+function frontmatter(
+  name: string,
+  description: string,
+  disableModel: boolean,
+  whenToUse?: string,
+): string {
   const lines = ['---', `name: ${yamlScalar(name)}`, `description: ${yamlScalar(description)}`];
+  if (whenToUse !== undefined) lines.push(`whenToUse: ${yamlScalar(whenToUse)}`);
   if (disableModel) lines.push('disable-model-invocation: true');
   lines.push('user-invocable: true', '---', '');
   return lines.join('\n');
@@ -86,9 +94,10 @@ function document(
   description: string,
   disableModel: boolean,
   body: string,
+  whenToUse?: string,
 ): Uint8Array {
   const clean = body.replace(/^\n+/, '').replace(/\s+$/, '');
-  return encode(`${frontmatter(name, description, disableModel)}\n${clean}\n`);
+  return encode(`${frontmatter(name, description, disableModel, whenToUse)}\n${clean}\n`);
 }
 
 function relative(repoRoot: string, absolute: string): string {
@@ -187,6 +196,7 @@ function commandDocument(
   command: Command,
   emittedPersonas: ReadonlyMap<string, string>,
   repoRoot: string,
+  delegationTools: ReadonlyMap<string, string> | undefined,
 ): { body: string; losses: Finding[] } {
   const losses: Finding[] = [];
   const sourcePath = relative(repoRoot, command.provenance.path);
@@ -194,7 +204,19 @@ function commandDocument(
 
   if (command.targetAgent !== undefined) {
     const emitted = emittedPersonas.get(command.targetAgent);
-    if (emitted !== undefined) {
+    const tool = delegationTools?.get(command.targetAgent);
+    if (tool !== undefined) {
+      paragraphs.push(
+        `Delegate this task with the \`${tool}\` tool.\nIf that tool is unavailable, load the \`${emitted}\` skill and follow it directly.`,
+      );
+      losses.push(
+        finding(
+          'COMMAND_AGENT_ROUTING',
+          `routes to the converted "${command.targetAgent}" skill and the "${tool}" delegation tool`,
+          { path: sourcePath, capability: 'adapted' },
+        ),
+      );
+    } else if (emitted !== undefined) {
       paragraphs.push(`Start by loading the \`${emitted}\` skill.`);
       losses.push(
         finding('COMMAND_AGENT_ROUTING', `routes to the converted "${command.targetAgent}" skill`, {
@@ -327,6 +349,7 @@ export async function planDshSkills(ir: HarnessIR, options: EmitOptions): Promis
           unit.source.description,
           !unit.source.invocation.model,
           unit.source.body,
+          unit.source.whenToUse ?? unit.source.description,
         ),
         sources: [unit.source.provenance],
         capability: 'exact',
@@ -359,12 +382,18 @@ export async function planDshSkills(ir: HarnessIR, options: EmitOptions): Promis
         }
       }
     } else if (unit.kind === 'command') {
-      const built = commandDocument(unit.name, unit.source, emittedPersonas, options.repoRoot);
+      const built = commandDocument(
+        unit.name,
+        unit.source,
+        emittedPersonas,
+        options.repoRoot,
+        options.delegationTools,
+      );
       losses.push(...built.losses);
       artifacts.push({
         path: `${dir}/SKILL.md`,
         kind: 'command-skill',
-        bytes: document(unit.name, unit.source.description, true, built.body),
+        bytes: document(unit.name, unit.source.description, true, built.body, unit.source.description),
         sources: [unit.source.provenance],
         capability: 'adapted',
       });
@@ -374,7 +403,13 @@ export async function planDshSkills(ir: HarnessIR, options: EmitOptions): Promis
       artifacts.push({
         path: `${dir}/SKILL.md`,
         kind: 'persona-skill',
-        bytes: document(unit.name, unit.source.description, false, built.body),
+        bytes: document(
+          unit.name,
+          unit.source.description,
+          false,
+          built.body,
+          unit.source.description,
+        ),
         sources: [unit.source.provenance],
         capability: 'adapted',
       });

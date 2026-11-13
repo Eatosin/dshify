@@ -1,6 +1,7 @@
 ---
 name: reviewer
 description: Review changes without editing files.
+whenToUse: Review changes without editing files.
 user-invocable: true
 ---
 

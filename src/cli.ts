@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,7 @@ import { applyRepo, type ApplyResult } from './core/apply.js';
 import { checkRepo, type CheckResult } from './core/check.js';
 import { LOCKFILE_NAME } from './core/lockfile.js';
 import { planRepo } from './core/plan.js';
+import type { DelegationRoute, MainPresetSpec } from './emit/dsh/bundle.js';
 import { finding, sortFindings } from './core/report.js';
 import { DISCOVERY_RULES, type DiscoveryRules } from './core/rules.js';
 import { scanRepo } from './core/scan.js';
@@ -47,7 +49,9 @@ Commands:
 Global flags:
   --json  --quiet  --root <dir>
   --dest <dir>  --lockfile <path>  --strategy <copy|link>
-  --presets  --force  --verify-live  --no-color
+  --presets  --delegation  --preset-prefix <prefix>  --model-map <file>
+  --extra-plugin <specifier>
+  --force  --verify-live  --no-color
   --help  --version
 
 Contract: docs/spec.md · docs/cli.md
@@ -62,6 +66,10 @@ interface ParsedArgs {
   readonly dest: string;
   readonly lockfile: string;
   readonly presets: boolean;
+  readonly delegation: boolean;
+  readonly presetPrefix: string | undefined;
+  readonly modelMapPath: string | undefined;
+  readonly extraPlugins: readonly string[];
   readonly strategy: 'copy' | 'link';
   readonly force: boolean;
   readonly dryRun: boolean;
@@ -73,11 +81,20 @@ function isCommand(value: string): value is Command {
   return (COMMANDS as readonly string[]).includes(value);
 }
 
-const VALUE_FLAGS = new Set(['--root', '--dest', '--lockfile', '--strategy']);
+const VALUE_FLAGS = new Set([
+  '--root',
+  '--dest',
+  '--lockfile',
+  '--strategy',
+  '--preset-prefix',
+  '--model-map',
+  '--extra-plugin',
+]);
 const BOOLEAN_FLAGS = new Set([
   '--json',
   '--quiet',
   '--presets',
+  '--delegation',
   '--force',
   '--dry-run',
   '--verify-live',
@@ -94,6 +111,10 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   let dest = '.dsh';
   let lockfile = LOCKFILE_NAME;
   let presets = false;
+  let delegation = false;
+  let presetPrefix: string | undefined;
+  let modelMapPath: string | undefined;
+  const extraPlugins: string[] = [];
   let force = false;
   let dryRun = false;
   let strategy: 'copy' | 'link' = 'copy';
@@ -127,6 +148,16 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         }
         strategy = value;
       }
+      if (arg === '--preset-prefix') {
+        if (value !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*-?$/.test(value)) {
+          throw DshifyError.usage(
+            `--preset-prefix must be lowercase letters, digits and hyphens (got "${value}")`,
+          );
+        }
+        presetPrefix = value;
+      }
+      if (arg === '--model-map') modelMapPath = value;
+      if (arg === '--extra-plugin') extraPlugins.push(value);
       // --lockfile is accepted for forward compatibility; apply consumes it.
       continue;
     }
@@ -134,6 +165,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
       if (arg === '--json') json = true;
       if (arg === '--quiet') quiet = true;
       if (arg === '--presets') presets = true;
+      if (arg === '--delegation') delegation = true;
       if (arg === '--force') force = true;
       if (arg === '--dry-run') dryRun = true;
       continue;
@@ -155,7 +187,32 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   if (rest.length > 0) {
     throw DshifyError.usage(`unexpected argument "${rest[0] ?? ''}"`);
   }
-  return { command, target, json, quiet, roots, dest, lockfile, presets, strategy, force, dryRun, help, version };
+  if (delegation && !presets) {
+    throw DshifyError.usage('--delegation requires --presets (delegation rows live in the preset bundle)');
+  }
+  if (modelMapPath !== undefined && !delegation) {
+    throw DshifyError.usage('--model-map requires --delegation');
+  }
+  if (delegation && presetPrefix === undefined) presetPrefix = '';
+  return {
+    command,
+    target,
+    json,
+    quiet,
+    roots,
+    dest,
+    lockfile,
+    presets,
+    delegation,
+    presetPrefix,
+    modelMapPath,
+    extraPlugins,
+    strategy,
+    force,
+    dryRun,
+    help,
+    version,
+  };
 }
 
 function resolveTarget(named: string | undefined, cwd: string): string {
@@ -325,6 +382,123 @@ function renderPlanHuman(
   return lines.join('\n');
 }
 
+interface BundleOptionsView {
+  readonly presetPrefix?: string;
+  readonly delegation?: readonly DelegationRoute[];
+  readonly mainPreset?: MainPresetSpec;
+  readonly extraPlugins?: readonly string[];
+  readonly bundleName?: string;
+}
+
+function bundleNameFor(repoRoot: string): string {
+  const slug = path
+    .basename(repoRoot)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug === '' ? 'dshify-harness-surface' : `${slug}-dsh-harness`;
+}
+
+interface ModelMapEntry {
+  readonly provider?: string;
+  readonly model?: string;
+  readonly tool?: string;
+}
+
+async function readModelMap(absolute: string): Promise<Record<string, ModelMapEntry>> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await readFile(absolute, 'utf8'));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw DshifyError.usage(`cannot read --model-map ${absolute}: ${detail}`);
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw DshifyError.usage('--model-map must be a JSON object keyed by persona id');
+  }
+  const entries: Record<string, ModelMapEntry> = {};
+  for (const [persona, raw] of Object.entries(parsed)) {
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      throw DshifyError.usage(`--model-map entry "${persona}" must be an object`);
+    }
+    const record = raw as Record<string, unknown>;
+    const read = (key: string): string | undefined => {
+      const value = record[key];
+      if (value === undefined) return undefined;
+      if (typeof value !== 'string' || value.trim() === '') {
+        throw DshifyError.usage(`--model-map entry "${persona}.${key}" must be a non-empty string`);
+      }
+      return value.trim();
+    };
+    const provider = read('provider');
+    const model = read('model');
+    const tool = read('tool');
+    if ((provider === undefined) !== (model === undefined)) {
+      throw DshifyError.usage(`--model-map entry "${persona}" needs both "provider" and "model"`);
+    }
+    if (tool !== undefined && !/^[a-z][a-z0-9_]*$/.test(tool)) {
+      throw DshifyError.usage(`--model-map entry "${persona}.tool" is not a valid tool name`);
+    }
+    entries[persona] = {
+      ...(provider === undefined ? {} : { provider }),
+      ...(model === undefined ? {} : { model }),
+      ...(tool === undefined ? {} : { tool }),
+    };
+  }
+  return entries;
+}
+
+function delegationRoutes(ir: HarnessIR, map: Record<string, ModelMapEntry>): DelegationRoute[] {
+  const routes: DelegationRoute[] = [];
+  const toolNames = new Set<string>();
+  const add = (persona: string, entry: ModelMapEntry | undefined): void => {
+    const tool = entry?.tool ?? `subagent_${persona.replaceAll('-', '_')}`;
+    if (toolNames.has(tool)) {
+      throw DshifyError.usage(`delegation tool name "${tool}" is used by two personas`);
+    }
+    toolNames.add(tool);
+    routes.push({
+      persona,
+      tool,
+      ...(entry?.provider === undefined || entry?.model === undefined
+        ? {}
+        : { provider: entry.provider, model: entry.model }),
+    });
+  };
+  for (const persona of ir.personas) add(persona.id, map[persona.id]);
+  const known = new Set(ir.personas.map((persona) => persona.id));
+  for (const [persona, entry] of Object.entries(map)) {
+    if (!known.has(persona)) add(persona, entry);
+  }
+  return routes;
+}
+
+async function bundleOptions(
+  parsed: ParsedArgs,
+  ir: HarnessIR,
+  cwd: string,
+  repoRoot: string,
+): Promise<BundleOptionsView> {
+  if (!parsed.delegation) {
+    return {
+      bundleName: bundleNameFor(repoRoot),
+      ...(parsed.extraPlugins.length === 0 ? {} : { extraPlugins: [...parsed.extraPlugins] }),
+    };
+  }
+  const map =
+    parsed.modelMapPath === undefined
+      ? {}
+      : await readModelMap(path.resolve(cwd, parsed.modelMapPath));
+  const prefix = parsed.presetPrefix ?? '';
+  return {
+    presetPrefix: prefix,
+    delegation: delegationRoutes(ir, map),
+    mainPreset: { id: `${prefix}main`, name: 'Main' },
+    bundleName: bundleNameFor(repoRoot),
+    ...(parsed.extraPlugins.length === 0 ? {} : { extraPlugins: [...parsed.extraPlugins] }),
+  };
+}
+
 async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<number> {
   const resolved = resolveTarget(parsed.target, cwd);
   const roots = await resolveRoots(resolved);
@@ -333,6 +507,7 @@ async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
     extraRoots: parsed.roots,
     limits: DEFAULT_SCAN_LIMITS,
   });
+  const bundle = await bundleOptions(parsed, ir, cwd, roots.repoRoot);
   const planned = await planRepo(ir, {
     repoRoot: roots.repoRoot,
     dest: parsed.dest,
@@ -340,6 +515,7 @@ async function runPlan(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<numb
     strategy: parsed.strategy,
     readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
     version: VERSION,
+    ...bundle,
   });
   const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
   const findings = sortFindings([...ir.warnings, ...planned.losses]);
@@ -473,6 +649,7 @@ async function runApply(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     extraRoots: parsed.roots,
     limits: DEFAULT_SCAN_LIMITS,
   });
+  const bundle = await bundleOptions(parsed, ir, cwd, roots.repoRoot);
   const result = await applyRepo(ir, {
     repoRoot: roots.repoRoot,
     dest: parsed.dest,
@@ -482,6 +659,7 @@ async function runApply(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     force: parsed.force,
     version: VERSION,
     readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
+    ...bundle,
   });
   const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
   const findings = sortFindings([...ir.warnings, ...result.planned.losses, ...result.findings]);
@@ -633,6 +811,7 @@ async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     extraRoots: parsed.roots,
     limits: DEFAULT_SCAN_LIMITS,
   });
+  const bundle = await bundleOptions(parsed, ir, cwd, roots.repoRoot);
   const result = await checkRepo(ir, {
     repoRoot: roots.repoRoot,
     dest: parsed.dest,
@@ -642,6 +821,7 @@ async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
     limits: DEFAULT_SCAN_LIMITS,
     version: VERSION,
+    ...bundle,
   });
   const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
   const sourcesByPath = new Map(

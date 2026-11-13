@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -47,8 +47,16 @@ function harnessArtifact(artifacts: readonly Artifact[], suffix: string): Artifa
 }
 
 /** Drop the loader tag so the structural YAML can be parsed here. */
+function patchDocument(text: string): unknown {
+  return parseYaml(text.replace(/!!js /g, ''));
+}
+
+/** The DSH loader requires a top-level array of patch entries. */
 function parsePatch(text: string): { insert: Array<Record<string, unknown>> } {
-  return parseYaml(text.replace(/!!js /g, '')) as { insert: Array<Record<string, unknown>> };
+  const document = patchDocument(text);
+  expect(Array.isArray(document), 'patch must be a top-level array').toBe(true);
+  const entries = document as Array<{ insert?: Array<Record<string, unknown>> }>;
+  return { insert: entries[0]?.insert ?? [] };
 }
 
 interface Row {
@@ -71,6 +79,15 @@ describe('preset bundle — manifest and patch', () => {
     expect(manifest.private).toBe(true);
     expect(manifest.dependencies).toBeUndefined();
     expect(manifest.dsh?.bundle?.patch).toBe('./cordis.patch.yml');
+  });
+
+  it('emits a top-level array of loader patch entries', async () => {
+    const { planned: bundle } = await planned('opencode-basic');
+    const document = patchDocument(textOf(harnessArtifact(bundle.artifacts, 'cordis.patch.yml')));
+    const entries = document as Array<Record<string, unknown>>;
+    expect(Array.isArray(document)).toBe(true);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toHaveProperty('insert');
   });
 
   it('mirrors the standard preset with the persona as the prefix', async () => {
@@ -102,16 +119,28 @@ describe('preset bundle — manifest and patch', () => {
       url: 'https://mcp.example.test/mcp',
     });
     expect(mcp?.disabled).toBe(true);
-    for (const id of ['agent-instructions', 'tool-bash', 'tool-fs-search', 'skill-filesystem', 'compaction', 'delegation']) {
+    for (const id of ['agent-instructions', 'tool-bash', 'tool-fs-search', 'skill-filesystem', 'compaction']) {
       expect(plugins.some((row) => row.id === id), id).toBe(true);
     }
+    // A read-only persona must not mount the delegation group: it could start a
+    // writable child and bypass its own write restriction.
+    expect(plugins.some((row) => row.id === 'delegation')).toBe(false);
   });
 
   it('keeps write/edit enabled for a writable persona', async () => {
     const { planned: bundle } = await planned('opencode-mcp-auth');
     const patch = parsePatch(textOf(harnessArtifact(bundle.artifacts, 'cordis.patch.yml')));
-    const plugins = (patch.insert[0] as { config: { plugins: Row[] } }).config.plugins;
+    const writable = patch.insert.find((entry) => {
+      const plugins = (entry as { config: { plugins: Row[] } }).config.plugins;
+      return plugins.find((row) => row.id === 'tool-fs')?.config !== undefined &&
+        (plugins.find((row) => row.id === 'tool-fs')?.config as Record<string, unknown>)['write'] !== false;
+    }) as { config: { plugins: Row[] } } | undefined;
+    expect(writable).toBeDefined();
+    const plugins = writable!.config.plugins;
     expect(plugins.find((row) => row.id === 'tool-fs')?.config).toEqual({ applyPatch: false });
+    // Child presets are workers: delegation lives in the parent preset only, so
+    // a child cannot recurse into another writable worker.
+    expect(plugins.some((row) => row.id === 'delegation')).toBe(false);
   });
 
   it('emits disabled MCP rows and never exposes a secret', async () => {
@@ -176,6 +205,36 @@ describe('preset bundle — apply and check', () => {
       version: '0.1.0',
     });
     expect(checked.exitCode).toBe(0);
+  });
+
+  it('rejects a patch that is not a top-level array of loader entries', async () => {
+    const { parent, root } = await copyFixture('opencode-basic');
+    tempParents.push(parent);
+    const ir = await scanned('opencode-basic', root);
+    const applyOptions = {
+      repoRoot: root,
+      dest: '.dsh',
+      lockfilePath: '.dshify.lock.json',
+      presets: true,
+      strategy: 'copy' as const,
+      force: false,
+      version: '0.1.0',
+      readResource: (absolute: string) => readSourceBytes(absolute, limits),
+    };
+    expect((await applyRepo(ir, applyOptions)).ok).toBe(true);
+
+    // The pre-0.1.4 emitter wrote `insert:` as a mapping, which DSH rejects at
+    // install time. Simulate that shape and prove check fails closed.
+    const patchPath = path.join(root, '.dsh/harness/cordis.patch.yml');
+    await writeFile(patchPath, 'insert:\n  - id: preset-broken\n    name: x\n', 'utf8');
+
+    const checked = await checkRepo(ir, {
+      ...applyOptions,
+      force: undefined,
+      limits,
+    } as never);
+    expect(checked.exitCode).toBe(4);
+    expect(checked.findings.map((entry) => entry.code)).toContain('BUNDLE_PATCH_INVALID');
   });
 
   it('keeps secrets out of the lockfile for auth-bearing MCP servers', async () => {
