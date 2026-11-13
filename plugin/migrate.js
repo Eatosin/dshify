@@ -47,16 +47,66 @@ export function validateInput(value) {
     return field;
   };
   for (const key of Object.keys(input)) {
-    if (!['action', 'path', 'dest', 'presets', 'force'].includes(key)) {
+    if (
+      ![
+        'action',
+        'path',
+        'dest',
+        'presets',
+        'force',
+        'delegation',
+        'presetPrefix',
+        'modelMap',
+        'extraPlugins',
+      ].includes(key)
+    ) {
       throw new Error(`migrate_harness: unknown argument ${key}`);
+    }
+  }
+  const delegation = readBoolean('delegation');
+  const presets = readBoolean('presets');
+  if (delegation && !presets) {
+    throw new Error('migrate_harness: delegation requires presets');
+  }
+  const presetPrefix = input['presetPrefix'];
+  if (presetPrefix !== undefined) {
+    if (typeof presetPrefix !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*-?$/.test(presetPrefix)) {
+      throw new Error('migrate_harness: presetPrefix must be lowercase letters, digits and hyphens');
+    }
+  }
+  const modelMap = input['modelMap'];
+  if (modelMap !== undefined) {
+    if (modelMap === null || typeof modelMap !== 'object' || Array.isArray(modelMap)) {
+      throw new Error('migrate_harness: modelMap must be an object keyed by persona id');
+    }
+    for (const [persona, entry] of Object.entries(modelMap)) {
+      if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+        throw new Error(`migrate_harness: modelMap entry "${persona}" must be an object`);
+      }
+      for (const key of ['provider', 'model', 'tool']) {
+        const value = /** @type {Record<string, unknown>} */ (entry)[key];
+        if (value !== undefined && (typeof value !== 'string' || value.length === 0)) {
+          throw new Error(`migrate_harness: modelMap entry "${persona}.${key}" must be a string`);
+        }
+      }
+    }
+  }
+  const extraPlugins = input['extraPlugins'];
+  if (extraPlugins !== undefined) {
+    if (!Array.isArray(extraPlugins) || extraPlugins.some((entry) => typeof entry !== 'string' || entry === '')) {
+      throw new Error('migrate_harness: extraPlugins must be an array of non-empty strings');
     }
   }
   return {
     action,
     path: readString('path'),
     dest: readString('dest') ?? '.dsh',
-    presets: readBoolean('presets'),
+    presets,
     force: readBoolean('force'),
+    delegation,
+    presetPrefix: presetPrefix ?? (delegation ? '' : undefined),
+    modelMap: modelMap ?? {},
+    extraPlugins: extraPlugins ?? [],
   };
 }
 
@@ -93,19 +143,54 @@ async function readResource(absolute) {
 }
 
 /**
+ * Build delegation routes for the plugin input.
+ * @param {import('@eatosin/dshify').HarnessIR} ir
+ * @param {Record<string, {provider?: string, model?: string, tool?: string}>} modelMap
+ */
+function delegationRoutes(ir, modelMap) {
+  const routes = [];
+  const seen = new Set();
+  const add = (persona, entry) => {
+    const tool = entry?.tool ?? `subagent_${persona.replaceAll('-', '_')}`;
+    if (seen.has(tool)) throw new Error(`migrate_harness: duplicate delegation tool ${tool}`);
+    seen.add(tool);
+    routes.push({
+      persona,
+      tool,
+      ...(entry?.provider === undefined || entry?.model === undefined
+        ? {}
+        : { provider: entry.provider, model: entry.model }),
+    });
+  };
+  for (const persona of ir.personas) add(persona.id, modelMap[persona.id]);
+  const known = new Set(ir.personas.map((persona) => persona.id));
+  for (const [persona, entry] of Object.entries(modelMap)) {
+    if (!known.has(persona)) add(persona, entry);
+  }
+  return routes;
+}
+
+/**
  * Run one action through the dshify engine.
  * @param {{action: string, path?: string, dest: string, presets: boolean, force: boolean}} input
  */
 export async function runAction(input) {
   const { scanRoot, repoRoot } = await resolveRoots(input.path ?? '.');
   const ir = await scanRepo({ root: scanRoot, extraRoots: [], limits: DEFAULT_SCAN_LIMITS });
+  const bundleName = `${path.basename(repoRoot).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'dshify'}-dsh-harness`;
   const base = {
     repoRoot,
     dest: input.dest,
     presets: input.presets,
     strategy: 'copy',
     version: VERSION,
+    bundleName,
     readResource,
+    ...(input.presetPrefix === undefined ? {} : { presetPrefix: input.presetPrefix }),
+    ...(input.delegation
+      ? { delegation: delegationRoutes(ir, input.modelMap ?? {}), mainPreset: { id: `${input.presetPrefix ?? ''}main`, name: 'Main' } }
+      : {}),
+    ...((input.extraPlugins ?? []).length === 0 ? {} : { extraPlugins: input.extraPlugins }),
   };
   const findings = [...ir.warnings];
 
@@ -205,14 +290,30 @@ export function parseCommand(rawInput) {
   if (tokens.length > 0 && ACTIONS.includes(tokens[0])) action = tokens.shift();
   let presets = false;
   let force = false;
+  let delegation = false;
+  let presetPrefix;
   const positional = [];
-  for (const token of tokens) {
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
     if (token === '--presets') presets = true;
     else if (token === '--force') force = true;
-    else positional.push(token);
+    else if (token === '--delegation') delegation = true;
+    else if (token === '--preset-prefix') {
+      presetPrefix = tokens[index + 1];
+      index += 1;
+    } else positional.push(token);
   }
   const target = positional[0];
-  return { action, path: target, dest: '.dsh', presets, force };
+  return {
+    action,
+    path: target,
+    dest: '.dsh',
+    presets,
+    force,
+    delegation: delegation && presets,
+    ...(presetPrefix === undefined ? {} : { presetPrefix }),
+    extraPlugins: [],
+  };
 }
 
 /**

@@ -22,7 +22,9 @@ const TOOL_DESCRIPTION =
   '"plan" shows the DSH artifacts, findings and losses (read-only); ' +
   '"apply" writes .dsh/ and .dshify.lock.json (writes files; use a test branch); ' +
   '"check" verifies the files, the lockfile and DSH discovery (read-only). ' +
-  'apply never deletes user files and refuses to overwrite files it does not own.';
+  'apply never deletes user files and refuses to overwrite files it does not own. ' +
+  'With presets, "delegation" emits a parent preset with model-routed child tools; ' +
+  '"presetPrefix" namespaces preset ids; "modelMap" maps persona id to {provider, model, tool}.';
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -60,6 +62,28 @@ const TOOL = {
       force: {
         type: 'boolean',
         description: 'Replace human-edited artifacts during apply. Use with care.',
+      },
+      delegation: {
+        type: 'boolean',
+        description:
+          'Emit a parent preset with one model-routed subagent tool per persona. Requires presets.',
+      },
+      presetPrefix: {
+        type: 'string',
+        description:
+          'Namespace for generated preset ids, for example "agency-". Keeps several repositories installable in one profile.',
+      },
+      modelMap: {
+        type: 'object',
+        additionalProperties: true,
+        description:
+          'Persona id to { provider, model, tool }. Both provider and model are required together. Tool defaults to subagent_<persona>.',
+      },
+      extraPlugins: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Bundle-local plugin specifiers to add to the preset, relative to cordis.patch.yml (for example "./tools/index.js"). The plugin file is user-authored; dshify never writes it.',
       },
     },
     required: ['action'],
