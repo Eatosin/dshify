@@ -369,6 +369,40 @@ async function collectResources(
   };
 }
 
+const SKILL_FILE_EXCLUDES = new Set(['SKILL.md', '.DS_Store']);
+const SKILL_DIR_EXCLUDES = new Set(['node_modules', '.git', '__pycache__']);
+
+/**
+ * Every regular file in the skill directory, relative to it.
+ *
+ * A skill is a folder, not one file. It may load references, templates,
+ * scripts, data and licence files by path, and it may mention those paths in
+ * prose or code spans rather than as markdown links. Copying only linked files
+ * produced a DSH skill that pointed at files it did not carry.
+ */
+async function collectSkillResources(baseDir: string): Promise<string[]> {
+  const files: string[] = [];
+  async function walk(dir: string): Promise<void> {
+    let entries: Dirent[];
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (SKILL_DIR_EXCLUDES.has(entry.name)) continue;
+        await walk(path.join(dir, entry.name));
+      } else if (entry.isFile()) {
+        if (SKILL_FILE_EXCLUDES.has(entry.name)) continue;
+        files.push(toPosix(path.relative(baseDir, path.join(dir, entry.name))));
+      }
+    }
+  }
+  await walk(baseDir);
+  return files.sort(cmp);
+}
+
 interface SkillFileArgs {
   readonly file: string;
   readonly baseDir: string;
@@ -464,8 +498,11 @@ async function addSkill(args: SkillFileArgs): Promise<void> {
     );
   }
 
-  const { resources, outside } = await collectResources(parsed.body, baseDir);
-  for (const target of outside) {
+  const linked = await collectResources(parsed.body, baseDir);
+  const resources = [
+    ...new Set([...linked.resources, ...(await collectSkillResources(baseDir))]),
+  ].sort(cmp);
+  for (const target of linked.outside) {
     warnings.push(
       finding(
         'RESOURCE_OUTSIDE_SKILL',
