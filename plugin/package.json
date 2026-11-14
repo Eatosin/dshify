@@ -1,6 +1,6 @@
 {
   "name": "@eatosin/dshify-plugin",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Port an OpenCode repository to DeepSeek Harness from inside DSH: scan, plan, apply and check, with owned writes and discovery verification.",
   "icon": "icon.svg",
   "author": "Owadokun Tosin Tobi",
@@ -67,7 +67,7 @@
     }
   },
   "dependencies": {
-    "@eatosin/dshify": "^0.2.0"
+    "@eatosin/dshify": "^0.2.2"
   },
   "types": "index.d.ts"
 }

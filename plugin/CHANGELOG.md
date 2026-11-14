@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1] — 2026-11-14
+
+### Changed
+
+- Dependency: `@eatosin/dshify` `^0.2.2`, so installs carry every skill file
+  (0.2.2) rather than only linked resources.
+
 ## [0.4.0] — 2026-11-13
 
 ### Added
