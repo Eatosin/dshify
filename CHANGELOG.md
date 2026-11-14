@@ -2,6 +2,21 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.2.1] — 2026-11-14
+
+### Fixed
+
+- The plan report claimed losses that `--presets` and `--delegation` already
+  prevent. With `--presets`, `EDIT_DENY_ADAPTED` and `SUBAGENT_ISOLATION` are no
+  longer emitted. With `--delegation`, `MODEL_OVERRIDE_IGNORED` is not emitted.
+- A delegation route without `provider` and `model` now reports
+  `MODEL_ROUTE_UNMAPPED`; the child inherits the parent model.
+- The mapping doc no longer names the nonexistent `EDIT_DENY_PRESET` code.
+
+### Notes
+
+- Tests: 172 passed (was 170). No CLI, schema, or artifact-byte change.
+
 ## [0.2.0] — 2026-11-13
 
 ### Added
