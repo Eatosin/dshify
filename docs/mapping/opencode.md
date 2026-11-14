@@ -35,11 +35,10 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | `!command` shell injection | preserved as a fenced example, never executed | `lossy` | `SHELL_INJECTION` (warning) |
 | Command frontmatter `agent:` / `subagent:` | first line of the skill body: "Start by loading the `<id>` skill" when a persona with that id exists; otherwise dropped | `adapted` | `COMMAND_AGENT_ROUTING` (info/warning) |
 | Command `model:` / `temperature:` | not applied | `unsupported` | `MODEL_OVERRIDE_IGNORED` (warning) |
-| Subagent | model-invocable persona skill (`<id>/SKILL.md`) | `adapted` | `SUBAGENT_ISOLATION` (warning) |
-| Subagent `permissions: edit deny` | persona states read-only + reports diffs | `adapted` | `EDIT_DENY_ADAPTED` (warning) |
-| Same, with `--presets` | preset row with `tool-fs` `write/include/edit/applyPatch: false` | `exact` | `EDIT_DENY_PRESET` (info) |
+| Subagent | model-invocable persona skill (`<id>/SKILL.md`); no isolation warning with `--presets` | `adapted` | `SUBAGENT_ISOLATION` (warning, presets off) |
+| Subagent `permissions: edit deny` | persona states read-only + reports diffs; with `--presets`, `tool-fs` `write/edit/applyPatch: false` | `adapted` / `exact` | `EDIT_DENY_ADAPTED` (warning, presets off) |
 | Subagent `tools:` map | not translated (presets use tool switches) | `unsupported` | `TOOLS_FRONTMATTER` (warning) |
-| Subagent `model:` | not applied | `unsupported` | `MODEL_OVERRIDE_IGNORED` (warning) |
+| Subagent `model:` | `agentOptions` with `--delegation`; not applied otherwise | `adapted` / `unsupported` | none / `MODEL_ROUTE_UNMAPPED` or `MODEL_OVERRIDE_IGNORED` (warning) |
 | Subagent `steps:` | not applied | `unsupported` | `STEPS_IGNORED` (warning) |
 | Remote MCP server (`type: remote`) | Cordis row `transport: streamable-http` | `adapted` | `MCP_REMOTE` (info) |
 | Local MCP server (command/args) | Cordis row `transport: stdio` | `adapted` | `MCP_STDIO` (info) |

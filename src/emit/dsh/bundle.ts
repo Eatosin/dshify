@@ -392,13 +392,20 @@ export function planDshBundle(ir: HarnessIR, options: BundleOptions): BundleResu
         );
       }
     }
-    const routed = new Set(options.delegation.map((route) => route.persona));
+    const applied = new Set(
+      options.delegation
+        .filter((route) => route.provider !== undefined && route.model !== undefined)
+        .map((route) => route.persona),
+    );
     for (const persona of ir.personas) {
-      if (persona.modelHint === undefined || routed.has(persona.id)) continue;
+      if (persona.modelHint === undefined || applied.has(persona.id)) continue;
+      const route = options.delegation.find((entry) => entry.persona === persona.id);
       losses.push(
         finding(
           'MODEL_ROUTE_UNMAPPED',
-          `persona "${persona.id}" has model hint "${persona.modelHint}" but no DSH route; the child inherits the parent model`,
+          route === undefined
+            ? `persona "${persona.id}" has model hint "${persona.modelHint}" but no DSH route; the child inherits the parent model`
+            : `persona "${persona.id}" has a delegation route without provider/model; the child inherits the parent model instead of "${persona.modelHint}"`,
           {
             path: repoRelative(options.repoRoot, persona.provenance.path),
             capability: 'manual',

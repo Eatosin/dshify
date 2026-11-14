@@ -30,6 +30,10 @@ export interface EmitOptions {
   readonly readResource: (absolute: string) => Promise<Uint8Array>;
   /** Persona id to named delegation tool, when v0.2 delegation is on. */
   readonly delegationTools?: ReadonlyMap<string, string>;
+  /** True when `--presets` is on: the bundle enforces tool isolation. */
+  readonly presets?: boolean;
+  /** True when `--delegation` is on: the bundle owns model-route reporting. */
+  readonly delegation?: boolean;
 }
 
 export interface EmitResult {
@@ -295,20 +299,24 @@ function personaDocument(
   name: string,
   persona: Persona,
   repoRoot: string,
+  options: EmitOptions,
 ): { body: string; losses: Finding[] } {
   const sourcePath = relative(repoRoot, persona.provenance.path);
-  const losses: Finding[] = [
-    finding(
-      'SUBAGENT_ISOLATION',
-      "a persona skill keeps the instructions but not the subagent's tool isolation (use --presets for that)",
-      { path: sourcePath, capability: 'adapted' },
-    ),
-  ];
-  if (persona.modelHint !== undefined) {
+  const losses: Finding[] = [];
+  if (options.presets !== true) {
+    losses.push(
+      finding(
+        'SUBAGENT_ISOLATION',
+        "a persona skill keeps the instructions but not the subagent's tool isolation (use --presets for that)",
+        { path: sourcePath, capability: 'adapted' },
+      ),
+    );
+  }
+  if (persona.modelHint !== undefined && options.delegation !== true) {
     losses.push(
       finding(
         'MODEL_OVERRIDE_IGNORED',
-        `model hint "${persona.modelHint}" is reported, not applied`,
+        `model hint "${persona.modelHint}" is reported, not applied (no --delegation route)`,
         { path: sourcePath, capability: 'unsupported' },
       ),
     );
@@ -317,13 +325,15 @@ function personaDocument(
   let body = `You are the \`${name}\` specialist.\n\n${persona.body.replace(/^\n+/, '').replace(/\s+$/, '')}`;
   if (persona.access === 'read-only') {
     body += `\n\nRead-only mode: report the needed edit as a patch. Do not modify files, run formatters or code generators, or make commits or configuration changes.`;
-    losses.push(
-      finding(
-        'EDIT_DENY_ADAPTED',
-        'edit-deny is stated in the persona body; --presets would enforce it as tool switches',
-        { path: sourcePath, capability: 'adapted' },
-      ),
-    );
+    if (options.presets !== true) {
+      losses.push(
+        finding(
+          'EDIT_DENY_ADAPTED',
+          'edit-deny is stated in the persona body; --presets would enforce it as tool switches',
+          { path: sourcePath, capability: 'adapted' },
+        ),
+      );
+    }
   }
   return { body: `${body}\n`, losses };
 }
@@ -398,7 +408,7 @@ export async function planDshSkills(ir: HarnessIR, options: EmitOptions): Promis
         capability: 'adapted',
       });
     } else {
-      const built = personaDocument(unit.name, unit.source, options.repoRoot);
+      const built = personaDocument(unit.name, unit.source, options.repoRoot, options);
       losses.push(...built.losses);
       artifacts.push({
         path: `${dir}/SKILL.md`,

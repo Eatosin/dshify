@@ -49,7 +49,7 @@ const ROUTES = [
   { persona: 'writer', tool: 'subagent_writer', provider: 'deepseek-official', model: 'deepseek-flash' },
 ];
 
-async function scenario(): Promise<{ ir: HarnessIR; artifacts: Artifact[]; losses: HarnessIR['warnings'] }> {
+async function setup(): Promise<{ root: string; ir: HarnessIR }> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dshify-v2-'));
   roots.push(root);
   for (const [relative, text] of Object.entries(FILES)) {
@@ -58,6 +58,11 @@ async function scenario(): Promise<{ ir: HarnessIR; artifacts: Artifact[]; losse
     await writeFile(absolute, text, 'utf8');
   }
   const ir = await scanRepo({ root, extraRoots: [], limits });
+  return { root, ir };
+}
+
+async function scenario(): Promise<{ ir: HarnessIR; artifacts: Artifact[]; losses: HarnessIR['warnings'] }> {
+  const { root, ir } = await setup();
   const planned = await planRepo(ir, {
     repoRoot: root,
     dest: '.dsh',
@@ -71,6 +76,19 @@ async function scenario(): Promise<{ ir: HarnessIR; artifacts: Artifact[]; losse
     readResource: (absolute) => readSourceBytes(absolute, limits),
   });
   return { ir, artifacts: [...planned.artifacts], losses: planned.losses as HarnessIR['warnings'] };
+}
+
+async function presetsOnly(): Promise<HarnessIR['warnings']> {
+  const { root, ir } = await setup();
+  const planned = await planRepo(ir, {
+    repoRoot: root,
+    dest: '.dsh',
+    presets: true,
+    strategy: 'copy',
+    version: '0.2.0',
+    readResource: (absolute) => readSourceBytes(absolute, limits),
+  });
+  return planned.losses as HarnessIR['warnings'];
 }
 
 function textOf(artifacts: readonly Artifact[], suffix: string): string {
@@ -183,5 +201,19 @@ describe('v0.2 preset bundle', () => {
     const codes = losses.map((finding) => finding.code);
     expect(codes).toContain('MODEL_ROUTE_UNMAPPED');
     expect(codes).toContain('PRESET_PROFILE_GLOBAL');
+    // Delegation is on, so the report must not claim the model hint is ignored.
+    expect(codes).not.toContain('MODEL_OVERRIDE_IGNORED');
+    // Presets enforce isolation, so the skill-emitter warnings are false here.
+    expect(codes).not.toContain('EDIT_DENY_ADAPTED');
+    expect(codes).not.toContain('SUBAGENT_ISOLATION');
+  });
+
+  it('keeps preset isolation claims but reports the unapplied model hint', async () => {
+    const codes = (await presetsOnly()).map((finding) => finding.code);
+    // Presets enforce isolation, so those two losses are false and suppressed.
+    expect(codes).not.toContain('EDIT_DENY_ADAPTED');
+    expect(codes).not.toContain('SUBAGENT_ISOLATION');
+    // Without --delegation the model hint is genuinely not applied.
+    expect(codes).toContain('MODEL_OVERRIDE_IGNORED');
   });
 });

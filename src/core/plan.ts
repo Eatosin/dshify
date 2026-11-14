@@ -72,6 +72,8 @@ export async function planRepo(ir: HarnessIR, options: PlanOptions): Promise<Pla
     repoRoot: options.repoRoot,
     readResource: options.readResource,
     ...(delegationTools === undefined ? {} : { delegationTools }),
+    presets: options.presets,
+    delegation: options.delegation !== undefined,
   });
 
   const artifacts = [...emitted.artifacts];
