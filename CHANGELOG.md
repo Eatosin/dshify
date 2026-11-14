@@ -2,6 +2,16 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.2.2] — 2026-11-14
+
+### Fixed
+
+- Skill folders now carry every regular file, not only the files linked from
+  the body. A skill that mentions references, templates, scripts, data or
+  licence files by path keeps them after the port.
+- `SKILL.md`, `.DS_Store`, and files under `node_modules`, `.git` or
+  `__pycache__` are skipped.
+
 ## [0.2.1] — 2026-11-14
 
 ### Fixed

@@ -26,7 +26,7 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 |---|---|---|---|
 | Skill inside a scanned root | copied (or linked) skill under `<dest>/skills/<id>/` | `exact` | — |
 | Skill under `.agents/skills` | nothing emitted | `exact` | `DSH_NATIVE_ROOT` (info) |
-| Skill resources referenced by body | copied beside the skill | `exact` | — |
+| Skill files | every regular file under the skill directory, copied beside the skill | `exact` | `SKILL.md`, `.DS_Store`, `node_modules`, `.git`, `__pycache__` are skipped |
 | Skill with missing `description` | not emitted | `unsupported` | `MALFORMED_SKILL` (error) |
 | Nested `SKILL.md` below a root's direct children | not emitted | `unsupported` | `UNSUPPORTED_NESTED_SKILL` (warning) |
 | Slash command | user-invocable skill (`<id>/SKILL.md`, `disable-model-invocation: true`) | `adapted` | — |
@@ -75,7 +75,7 @@ Scan rules:
 - Frontmatter must be a YAML mapping with `name` (kebab-case) and `description` (single line). `name` must equal the directory name; a mismatch is `MALFORMED_SKILL` with a rename suggestion, not an automatic rename.
 - `.agents/skills` is emitted nothing: DSH already scans it at rank 200. If a `.agents` skill's `name` does not match its directory, report `MALFORMED_SKILL` because DSH would skip it too.
 - Body bytes are preserved. A generated file differs only in frontmatter key order and the required invocation flags.
-- `resources`: relative links/images in the body that resolve to files under the skill directory are copied. Anything outside the skill directory is `RESOURCE_OUTSIDE_SKILL` (warning) and not copied.
+- `resources`: every regular file under the skill directory is carried, not only markdown links. A skill may mention references, templates, scripts, data or licence files by path in prose or code spans; those files must travel with it. `SKILL.md`, `.DS_Store`, and files under `node_modules`, `.git` or `__pycache__` are skipped. Links outside the skill directory are `RESOURCE_OUTSIDE_SKILL` (warning) and not copied.
 
 Emission: `<dest>/skills/<name>/SKILL.md` plus copied resources at the same relative paths. `--strategy link` emits one symlink per skill directory (DSH scans direct children only); report `LINK_STRATEGY` so the portability trade-off is visible.
 

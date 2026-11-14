@@ -194,3 +194,21 @@ describe('opencode scan — malformed and missing input', () => {
     ).rejects.toMatchObject({ exitCode: 1 });
   });
 });
+
+describe('skill resources', () => {
+  it('carries every skill file and skips excluded names', async () => {
+    const root = await mutatedFixture();
+    const demo = path.join(root, '.opencode/skills/demo-skill');
+    await mkdir(path.join(demo, 'assets'), { recursive: true });
+    await writeFile(path.join(demo, 'assets/data.txt'), 'payload\n');
+    await mkdir(path.join(demo, 'node_modules/pkg'), { recursive: true });
+    await writeFile(path.join(demo, 'node_modules/pkg/index.js'), 'ignored\n');
+    await mkdir(path.join(demo, '__pycache__'), { recursive: true });
+    await writeFile(path.join(demo, '__pycache__/cache.pyc'), 'ignored\n');
+    await writeFile(path.join(demo, '.DS_Store'), 'ignored\n');
+
+    const ir = await scanRepo({ root, extraRoots: [], limits });
+    const skill = ir.skills.find((candidate) => candidate.id === 'demo-skill');
+    expect(skill?.resources).toEqual(['assets/data.txt', 'references/example.md']);
+  });
+});

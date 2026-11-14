@@ -98,7 +98,7 @@ interface Skill {
   description: string;
   body: string;                  // markdown, frontmatter excluded
   invocation: { model: boolean; user: boolean };
-  resources: string[];           // relative paths referenced from the body (best-effort)
+  resources: string[];           // files carried with the skill, relative to its directory (sorted)
   provenance: Provenance;
   capability: Capability;
 }
@@ -149,7 +149,7 @@ Destination layout (all under `dest`, default `.dsh/`):
 
 ```text
 .dsh/skills/<id>/SKILL.md        generated skills (commands, personas, copied roots)
-.dsh/skills/<id>/**              referenced resources, copied with the skill
+.dsh/skills/<id>/**              carried skill files, copied at the same relative paths
 .dsh/harness/package.json        only with --presets
 .dsh/harness/cordis.patch.yml    only with --presets
 .dsh/harness/PLUGINS.md          only with --presets and a plugin surface
@@ -172,7 +172,7 @@ Mapping rules:
 
 | Source | Emitted | Capability | Notes |
 |---|---|---|---|
-| OpenCode skill under a scan root | `.dsh/skills/<id>/` | exact (copy) / adapted (link) | resources copied when the body references them |
+| OpenCode skill under a scan root | `.dsh/skills/<id>/` | exact (copy) / adapted (link) | every regular file under the skill directory is carried (minus `SKILL.md`, `.DS_Store`, `node_modules`, `.git`, `__pycache__`) |
 | Skill under `.agents/skills` | nothing | exact | already a native DSH root; reported, not duplicated |
 | Command | user-invocable skill | adapted | `$ARGUMENTS` → prose sentence; shell injection → manual loss |
 | Subagent | model-invocable persona skill | adapted | isolation loss unless `--presets` |
@@ -279,7 +279,7 @@ Every finding has `{ code, severity, message, path?, capability }`. Severity: `i
 ## 12. Limits
 
 - Skill body ≤ 1 MiB; total emitted bytes ≤ 32 MiB or 5,000 artifacts (whichever first), configurable.
-- Only UTF-8 text files are converted; binary assets are copied only when referenced resources are supported (v0.1 copies files listed in `resources`, with a size limit).
+- Only UTF-8 text files are converted; binary assets are copied as carried skill files. v0.1 copies every regular file under the skill directory into `resources`, except `SKILL.md`, `.DS_Store`, and files under `node_modules`, `.git`, or `__pycache__`.
 - Single-threaded; no watch mode in v0.1.
 
 ## 13. Acceptance criteria for v0.1
