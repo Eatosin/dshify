@@ -6,7 +6,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 **Contract:** this page sequences the work; what "done" means is [spec.md §13](spec.md). Where the two overlap, the spec wins.
 
-**Status (2026-11-19):** implementation complete; every §13 criterion is covered by CI tests. The current line is [`@eatosin/dshify@0.3.0`](https://www.npmjs.com/package/@eatosin/dshify), published with SLSA provenance through Trusted Publishing; the first-time-user check is verified, the manual migration round-trip remains. Release tooling: `0.1.1` publishes through npm Trusted Publishing (OIDC) and retires the bootstrap token.
+**Status (2026-11-19):** implementation complete; every §13 criterion is covered by CI tests. The current line is [`@eatosin/dshify@0.3.1`](https://www.npmjs.com/package/@eatosin/dshify), published with SLSA provenance through Trusted Publishing; the first-time-user check is verified, the manual migration round-trip remains. Release tooling: `0.1.1` publishes through npm Trusted Publishing (OIDC) and retires the bootstrap token.
 
 **Deliverables**
 

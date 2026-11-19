@@ -1,22 +1,21 @@
 # dshify findings — 2026-11-19
 
-Source: a fresh port of the Agency OS repository
-(`/home/tosin/projects/agency-os`) against DSH `0.2.2-rc.5`, plus live
-community research. This note records what failed, what changed, and what is
+Source: a fresh port of a private reference repository against DSH
+`0.2.2-rc.5`, plus live community research. This note records what failed, what changed, and what is
 still deliberately manual.
 
 ## Scope and evidence
 
 | Item | Result |
 |---|---|
-| Agency OS source surface | 12 skills, 6 commands, 6 personas, 1 MCP server, 2 plugin files |
+| Private source surface | 12 skills, 6 commands, 6 personas, 1 MCP server, 2 plugin files |
 | `dshify scan` | 4 findings: `AGENTS_MD_SHARED`, `INSTRUCTIONS_EXTRA_UNMAPPED`, `MCP_STDIO`, `PLUGIN_UNSUPPORTED` |
 | Temp-copy `apply --presets --delegation` | 134 artifacts written |
 | `check --verify-live` | exit 0; 24 skills visible, 0 skipped; 7/7 presets composed |
 | Tests | 181 passed; typecheck green |
 
-The Agency OS port is the reproduction case. The temp copy existed so the
-verification did not rewrite the user's `.dsh/` tree.
+The private port is the reproduction case. The temp copy existed so the
+verification did not rewrite the source repository's `.dsh/` tree.
 
 ## Findings fixed in this change
 
@@ -153,7 +152,7 @@ npm run build
 python3 -I _tools/check-dsh-facts.py \
   --dsh-root /home/tosin/.npm/_npx/1e7f6d9597241db0/node_modules/@deepseek-ai
 
-# temp copy of the Agency OS source surface
+# temp copy of the private source surface
 dshify apply "$TMP" --presets --delegation --model-map "$TMP/.dsh/model-map.json"
 dshify check "$TMP" --presets --delegation \
   --model-map "$TMP/.dsh/model-map.json" --verify-live

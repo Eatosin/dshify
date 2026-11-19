@@ -1,6 +1,6 @@
 {
   "name": "@eatosin/dshify",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Convert OpenCode skills, commands, personas, and MCP servers to DeepSeek Harness (DSH) with deterministic output and live composition verification.",
   "keywords": [
     "deepseek",

@@ -2,6 +2,20 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.3.1] — 2026-11-19
+
+### Changed
+
+- The banner hero names a neutral private workspace instead of a customer
+  repository. The social preview and package README use the same asset.
+- The public findings notes no longer name the private reference repository or
+  its absolute path.
+
+### Notes
+
+- Documentation and image asset only. No CLI, schema, artifact, or finding-code
+  change.
+
 ## [0.3.0] — 2026-11-19
 
 ### Added
@@ -67,7 +81,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - `--extra-plugin <specifier>`: bundle-local plugin rows, relative to
   `cordis.patch.yml`. The plugin file stays user-authored.
 - The bundle package name derives from the repository directory, for example
-  `agency-os-dsh-harness`.
+  a repository-derived bundle name.
 - `whenToUse` is preserved from source frontmatter and falls back to the
   description. Command skills with an `agent:` target route to the named
   delegation tool when delegation is on.

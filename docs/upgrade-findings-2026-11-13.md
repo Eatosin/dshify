@@ -1,6 +1,6 @@
 # dshify upgrade findings — 2026-11-13
 
-Source: the Agency OS port (`/home/tosin/projects/agency-os`) to DeepSeek Harness.
+Source: a private reference port to DeepSeek Harness.
 The port scanned 12 skills, 6 commands, 6 personas, 1 MCP server, and 2 plugin
 files. The surface was installed and verified live: 7 presets are `active`, and
 the new skills appear in the session catalog.
@@ -30,7 +30,7 @@ bundle could never install.
 ### 2. `.opencode/opencode.json` was ignored
 
 `readConfig` read only `<root>/opencode.json`. OpenCode V2 keeps the project
-config at `.opencode/opencode.json`. The Agency OS repository uses that path, so
+config at `.opencode/opencode.json`. The reference repository uses that path, so
 the scan lost the MCP server, the model hints, the permissions, and the
 instructions list. Evidence: `dshify scan` reported `mcp 0` before the fix and
 `mcp 1` after it, with the finding path `.opencode/opencode.json`.
@@ -58,7 +58,7 @@ artifacts. That is why defect 1 shipped.
 
 Today `--presets` emits one preset per persona. It does not emit a parent preset
 that can start them, and it reports every `model:` hint as
-`MODEL_OVERRIDE_IGNORED`. The Agency OS harness had to add this by hand:
+`MODEL_OVERRIDE_IGNORED`. The reference harness had to add this by hand:
 
 - one `@deepseek-ai/dsh-tool-subagent` row per persona,
 - `agentPreset: <preset-id>` to pin the child composition,
@@ -66,7 +66,7 @@ that can start them, and it reports every `model:` hint as
 - `allowedAgentPresets` on the generic `subagent` tool.
 
 DSH routes differ from OpenCode routes. A model map is required; it cannot be
-inferred. Agency OS uses:
+inferred. The reference repository uses:
 
 | Persona | OpenCode hint | DSH route |
 |---|---|---|
@@ -77,7 +77,7 @@ inferred. Agency OS uses:
 
 Preset ids are the bare persona id (`planner`, `planner`). DSH rejects duplicate
 preset ids in one profile, so two generated harnesses cannot be installed
-together. The Agency OS bundle uses an `agency-` prefix.
+together. The reference bundle uses a `ref-` prefix.
 
 Proposal: `--preset-prefix <prefix>` applies to both the Loader row id
 (`preset-<prefix><id>`) and `config.id`. The same prefix feeds `agentPreset`.
@@ -110,7 +110,7 @@ If the tool is unavailable, load the `code-reviewer` skill and follow it directl
 `PLUGIN_UNSUPPORTED` is a single warning. Users cannot see what they lost. Emit a
 machine-readable manifest (`.dsh/harness/PLUGINS.md` plus a JSON file) that lists
 each plugin file, the tool names and descriptions found statically, and the DSH
-porting recipe. Never execute the source plugin. The Agency OS port hand-wrote
+porting recipe. Never execute the source plugin. The reference port hand-wrote
 `.dsh/harness/tools/index.js`; that is the expected manual step.
 
 ### 10. Extra instruction files are lost
@@ -140,16 +140,16 @@ General step instead. Add this to the plan report as `PRESET_PROFILE_GLOBAL`.
 ```json
 {
   "preset": {
-    "prefix": "agency-",
+    "prefix": "ref-",
     "main": {
-      "id": "agency-main",
-      "name": "Agency OS",
+      "id": "ref-main",
+      "name": "Reference",
       "delegation": [
         { "persona": "planner", "tool": "subagent_planner", "provider": "deepseek-official", "model": "deepseek-v4-pro" },
         { "persona": "implementer", "tool": "subagent_implementer", "provider": "deepseek-official", "model": "deepseek-flash" }
       ],
       "extraPlugins": [
-        { "id": "agency-tools", "name": "./tools/index.js" }
+        { "id": "ref-tools", "name": "./tools/index.js" }
       ]
     }
   },
@@ -189,8 +189,8 @@ cd /home/tosin/projects/dshify
 npm run typecheck          # green
 npm test                   # 160 passed after this change
 npm run build
-node dist/cli.js scan /home/tosin/projects/agency-os   # mcp 1, config finding path correct
-node dist/cli.js check /home/tosin/projects/agency-os  # lockfile intentionally absent
+node dist/cli.js scan <private-repo>   # mcp 1, config finding path correct
+node dist/cli.js check <private-repo>  # lockfile intentionally absent
 ```
 
 The installed DSH plugin still uses the published `@eatosin/dshify` engine. To

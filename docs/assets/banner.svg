@@ -80,7 +80,7 @@
     <circle cx="22" cy="19" r="4.5" fill="#FF6B6B" opacity="0.85"/>
     <circle cx="39" cy="19" r="4.5" fill="#FFD166" opacity="0.85"/>
     <circle cx="56" cy="19" r="4.5" fill="#2DD4BF" opacity="0.9"/>
-    <text x="78" y="24" class="mono" font-size="11.5" fill="#6F87A8">~/agency-os</text>
+    <text x="78" y="24" class="mono" font-size="11.5" fill="#6F87A8">~/lexpertz-ai</text>
     <text x="336" y="24" class="mono" font-size="10.5" fill="#4C6384">zsh</text>
 
     <text x="24" y="72" class="mono" font-size="14" fill="#7DD3FC">$</text>
