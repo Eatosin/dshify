@@ -435,7 +435,7 @@ describe('JSON reports name the discovery rule set', () => {
       };
       expect(payload.rules, command).toMatchObject({
         rulesVersion: 1,
-        dshVersion: '0.2.2-rc.1',
+        dshVersion: '0.2.2-rc.5',
         source: 'docs/dsh-facts',
       });
       expect(payload.rules?.packages).toContain('@deepseek-ai/dsh-skill-filesystem');
@@ -447,6 +447,6 @@ describe('JSON reports name the discovery rule set', () => {
     await run(['apply', root], capture().io, { cwd });
     const c = capture();
     expect(await run(['check', root], c.io, { cwd })).toBe(0);
-    expect(c.out()).toContain('rules    DSH 0.2.2-rc.1 (rules v1)');
+    expect(c.out()).toContain('rules    DSH 0.2.2-rc.5 (rules v1)');
   });
 });

@@ -4,7 +4,7 @@ title: The shipped host-command set
 description: The exact built-ins that win /name over a skill, read from shipped code.
 status: verified
 package: '@deepseek-ai/dsh-commands'
-version: 0.2.2-rc.1
+version: 0.2.2-rc.5
 source: lib/types/builtin.js
 sha256: b4edc7c4bb6ee763fbf95c233ff931567443547ff6f84c0669b52d05274007b5
 spec: docs/spec.md §7; Appendix A

@@ -15,7 +15,7 @@ import { repoRelative } from '../core/paths.js';
  *
  * Every rule below cites the shipped README it derives from:
  *
- * - Roots and ranks — `@deepseek-ai/dsh-skill-filesystem` README (0.2.2-rc.1):
+ * - Roots and ranks — `@deepseek-ai/dsh-skill-filesystem` README (0.2.2-rc.5):
  *   project roots are `<projectRoot>/.dsh/skills` (rank 100) and
  *   `<projectRoot>/.agents/skills` (rank 200); custom and user roots (300/400/500)
  *   are outside this offline simulation.

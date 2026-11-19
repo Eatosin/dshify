@@ -1,9 +1,23 @@
 # dshify
 
+**OpenCode → DeepSeek Harness migration, verified.** Convert skills, commands, subagents/personas, and MCP servers into a DSH surface — deterministically, with owned writes and a live composition check.
+
 [![npm](https://img.shields.io/npm/v/@eatosin/dshify.svg)](https://www.npmjs.com/package/@eatosin/dshify)
 [![plugin](https://img.shields.io/npm/v/@eatosin/dshify-plugin.svg?label=plugin)](https://www.npmjs.com/package/@eatosin/dshify-plugin)
+[![CI](https://github.com/Eatosin/dshify/actions/workflows/ci.yml/badge.svg)](https://github.com/Eatosin/dshify/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![node](https://img.shields.io/badge/node-22%20%7C%2024-339933.svg)](package.json)
+[![DSH](https://img.shields.io/badge/DSH-0.2.2--rc.5-5EEAD4.svg)](docs/dsh-facts/CONTEXT.md)
 
-Port an agent-harness setup to **DeepSeek Harness (DSH)**. dshify scans the source repository, plans a DSH surface, writes owned files, and checks that DSH discovery can find the result. It reports each capability that it changes or loses.
+<p align="center">
+  <img src="docs/assets/banner.png" alt="dshify — port OpenCode skills, commands, personas and MCP servers to DeepSeek Harness, with verified presets" width="100%">
+</p>
+
+dshify scans an OpenCode repository, plans the DSH equivalent, writes only the
+files it owns, and checks that DSH discovery and the preset roster actually
+compose. Every conversion is classified as `exact`, `adapted`, `lossy`,
+`manual`, or `unsupported`, so nothing is silently dropped. The core is offline;
+`--verify-live` adds a local composition probe against your installed `dsh`.
 
 ![dshify demo: scan, plan, apply and check on a small OpenCode repo](docs/assets/demo.gif)
 
@@ -167,7 +181,7 @@ Verification
 ## What it does not do
 
 - It does not flatten nested skills. It reports `UNSUPPORTED_NESTED_SKILL`.
-- It does not support `--strategy link` or `--verify-live` yet.
+- It does not support `--strategy link` yet.
 - It does not support Claude Code or Codex yet. These adapters are on the roadmap.
 - It does not run source plugins, commands, or MCP servers.
 - It does not repair a human edit. It reports the conflict and keeps the edit.
@@ -187,7 +201,7 @@ Read the contract in [docs/spec.md](docs/spec.md). Read the design in [docs/arch
 No. It writes only under `.dsh/` and one lockfile.
 
 **Does dshify need a network connection?**
-No. The core is offline. Live verification is opt-in and is not implemented yet.
+No. The core is offline. `--verify-live` is opt-in: it composes the installed bundle with the local `dsh` in a temporary `DSH_HOME`, still without a network request.
 
 **What happens if I edit a generated file?**
 `check` reports a conflict and exits 3. `apply` keeps your edit. Use `--force` only if you want to replace it.
@@ -203,7 +217,7 @@ Delete `.dsh/` and `.dshify.lock.json`. The source repository does not change.
 
 ## Status and roadmap
 
-The current version is `0.2.0`. It is published as [`@eatosin/dshify`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance.
+The current version is `0.3.0`. It is published as [`@eatosin/dshify`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance.
 
 OpenCode V2 is supported now. The next milestones are the Claude Code adapter, the Codex adapter, and a DSH plugin wrapper. See [docs/roadmap.md](docs/roadmap.md).
 

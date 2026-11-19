@@ -6,13 +6,13 @@ description: The target seam — IR to deterministic artifact bytes in memory; n
 universe: live
 status: verified
 implementation: live
-verified: 2026-11-07 @ 1b799e1
+verified: 2026-11-19 @ 010d423
 entity: docs/architecture.md §3.2; src/emit/dsh/skills.ts + src/emit/dsh/bundle.ts (skills and preset bundle implemented)
 ---
 
 # emitter contract — the target seam
 
-`TargetEmitter.plan(ir, options) → PlannedOutput`, returning artifact **bytes in memory**. Writing is `apply`'s job alone. `src/emit/dsh/skills.ts` emits the skill surface and `src/emit/dsh/bundle.ts` the `--presets` harness bundle (manifest + Cordis patch with persona and MCP rows) — `live` for v0.1.
+`TargetEmitter.plan(ir, options) → PlannedOutput`, returning artifact **bytes in memory**. Writing is `apply`'s job alone. `src/emit/dsh/skills.ts` emits the skill surface and `src/emit/dsh/bundle.ts` the `--presets` harness bundle (manifest + Cordis patch with persona and MCP rows) — `live` for v0.1. Generated presets mirror the DSH `0.2.2-rc.5` standard preset, including the required `plan-mode` section, `tool-office`, and `interrupt: false`.
 
 ## Why this shape
 

@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+  <title id="title">dshify — port OpenCode to DeepSeek Harness, verified</title>
+  <desc id="desc">Dark banner with the dshify wordmark, the tagline Port. Verify. Ship., and a terminal card showing a verified DSH check.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080D1A"/>
+      <stop offset="0.55" stop-color="#0C1428"/>
+      <stop offset="1" stop-color="#101E38"/>
+    </linearGradient>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.62" stop-color="#A9C7FF"/>
+      <stop offset="1" stop-color="#5EEAD4"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3B82F6" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#2DD4BF" stop-opacity="0.2"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2DD4BF" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#2DD4BF" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#8FB4FF" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+    <style>
+      .mono { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; }
+      .sans { font-family: "Inter", "DejaVu Sans", Arial, sans-serif; }
+      .chip { font-family: "Inter", "DejaVu Sans", Arial, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.6px; }
+      .pill { font-family: "Inter", "DejaVu Sans", Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 2.4px; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="360" fill="url(#bg)"/>
+  <rect width="1280" height="360" fill="url(#grid)"/>
+  <circle cx="1070" cy="70" r="190" fill="url(#glow)"/>
+  <circle cx="150" cy="330" r="160" fill="url(#glow)" opacity="0.55"/>
+
+  <!-- left: identity -->
+  <rect x="80" y="56" width="214" height="30" rx="15" fill="#0F1C34" stroke="#274063"/>
+  <circle cx="97" cy="71" r="4" fill="#2DD4BF"/>
+  <text x="110" y="76" class="pill" fill="#9DB7DA">DEEPSEEK HARNESS</text>
+
+  <text x="76" y="170" class="sans" font-size="94" font-weight="800" letter-spacing="-3" fill="url(#word)">dshify</text>
+
+  <text x="82" y="216" class="sans" font-size="27" font-weight="600" fill="#EAF2FF">Port. Verify. Ship.</text>
+  <text x="82" y="249" class="sans" font-size="16" fill="#8FA6C6">OpenCode skills, commands, personas and MCP → a verified DSH surface.</text>
+
+  <g transform="translate(80 288)">
+    <g>
+      <rect width="62" height="26" rx="7" fill="#12213C" stroke="#2A4166"/>
+      <text x="31" y="17.5" text-anchor="middle" class="chip" fill="#BFD4F2">scan</text>
+    </g>
+    <g transform="translate(72 0)">
+      <rect width="62" height="26" rx="7" fill="#12213C" stroke="#2A4166"/>
+      <text x="31" y="17.5" text-anchor="middle" class="chip" fill="#BFD4F2">plan</text>
+    </g>
+    <g transform="translate(144 0)">
+      <rect width="66" height="26" rx="7" fill="#12213C" stroke="#2A4166"/>
+      <text x="33" y="17.5" text-anchor="middle" class="chip" fill="#BFD4F2">apply</text>
+    </g>
+    <g transform="translate(220 0)">
+      <rect width="66" height="26" rx="7" fill="#0E2C33" stroke="#1E6B63"/>
+      <text x="33" y="17.5" text-anchor="middle" class="chip" fill="#7DE8D6">check</text>
+    </g>
+    <g transform="translate(296 0)">
+      <rect width="72" height="26" rx="7" fill="#12213C" stroke="#2A4166"/>
+      <text x="36" y="17.5" text-anchor="middle" class="chip" fill="#BFD4F2">verify</text>
+    </g>
+  </g>
+
+  <!-- right: verified terminal card -->
+  <g transform="translate(824 56)">
+    <rect width="392" height="248" rx="16" fill="#0A1224" stroke="#29405F"/>
+    <rect x="1" y="1" width="390" height="36" rx="15" fill="#101B31"/>
+    <rect x="1" y="22" width="390" height="15" fill="#101B31"/>
+    <circle cx="22" cy="19" r="4.5" fill="#FF6B6B" opacity="0.85"/>
+    <circle cx="39" cy="19" r="4.5" fill="#FFD166" opacity="0.85"/>
+    <circle cx="56" cy="19" r="4.5" fill="#2DD4BF" opacity="0.9"/>
+    <text x="78" y="24" class="mono" font-size="11.5" fill="#6F87A8">~/agency-os</text>
+    <text x="336" y="24" class="mono" font-size="10.5" fill="#4C6384">zsh</text>
+
+    <text x="24" y="72" class="mono" font-size="14" fill="#7DD3FC">$</text>
+    <text x="42" y="72" class="mono" font-size="14" fill="#D6E4FF">dshify check . --verify-live</text>
+
+    <g class="mono" font-size="13">
+      <text x="24" y="105" fill="#2DD4BF">✓</text>
+      <text x="44" y="105" fill="#B7C9E2">24 skills visible</text>
+      <text x="236" y="105" fill="#6280A6">0 skipped</text>
+
+      <text x="24" y="133" fill="#2DD4BF">✓</text>
+      <text x="44" y="133" fill="#B7C9E2">7/7 presets composed</text>
+      <text x="252" y="133" fill="#6280A6">dsh 0.2.2-rc.5</text>
+
+      <text x="24" y="161" fill="#2DD4BF">✓</text>
+      <text x="44" y="161" fill="#B7C9E2">lockfile and discovery agree</text>
+
+      <text x="24" y="189" fill="#2DD4BF">✓</text>
+      <text x="44" y="189" fill="#B7C9E2">0 findings</text>
+      <text x="252" y="189" fill="#5EEAD4">verified</text>
+    </g>
+
+    <rect x="24" y="210" width="344" height="1" fill="#1E3352"/>
+    <text x="24" y="233" class="mono" font-size="11" fill="#6F87A8">deterministic · owned writes · offline core</text>
+  </g>
+
+  <!-- connector -->
+  <path d="M690 178 C 735 178, 750 178, 808 178" fill="none" stroke="url(#edge)" stroke-width="1.5" stroke-dasharray="4 5"/>
+  <path d="M800 173 L 810 178 L 800 183" fill="none" stroke="#2DD4BF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -5,6 +5,7 @@
 - **Supersedes:** none
 - **Revision:** rev. 2 (2026-11-06) — reserved host commands corrected to the six shipped built-ins (§7, §14, Appendix A).
 - **Revision:** rev. 3 (2026-11-07) — command-skill body layout and `$ARGUMENTS` replacement pinned; nested-skill code fixed as `UNSUPPORTED_NESTED_SKILL` (§7, §14).
+- **Revision:** rev. 4 (2026-11-19) — presets track DSH `0.2.2-rc.5` (plan-mode guidance, office tool, subagent interrupt); live composition probe defined (§7, §8).
 - **Implementation gate:** cleared — implementation may proceed from this contract. Changes require a spec PR.
 
 ## 1. Problem
@@ -216,6 +217,7 @@ Preset emission (`--presets`):
 - Read-only personas set `tool-fs` `{ read: true, write: false, edit: false, applyPatch: false }` and mount no delegation, so they cannot start a writable child.
 - `--preset-prefix` namespaces Loader row ids and `config.id`. It is required when two generated harnesses share one profile.
 - `--delegation` adds a parent preset (`<prefix>main`) with a standard toolset, one `@deepseek-ai/dsh-tool-subagent` row per persona (`agentPreset` plus optional `agentOptions` from `--model-map`), and `allowedAgentPresets` on the generic `subagent` tool. MCP rows move to the parent preset.
+- The parent `planning` group carries a non-empty `plan-mode` `section`; `tool-subagent-control` sets `interrupt: false`; the common rows include `tool-office`. These mirror DSH `0.2.2-rc.5`'s shipped `standard` preset; omitting the plan-mode section makes the preset fail at plugin load.
 - `--model-map` is a JSON object keyed by persona id with `{ provider, model, tool? }`. Provider and model appear together. `tool` defaults to `subagent_<persona>`.
 - `--extra-plugin` adds one bundle-local row per specifier, relative to `cordis.patch.yml`. The plugin file is user-authored; dshify never writes it.
 - The bundle patch is a **top-level YAML array** of loader patch entries. The manifest package name derives from the repository directory; it declares `dsh.bundle.patch` and no dependencies. dshify never installs it.
@@ -226,7 +228,9 @@ Preset emission (`--presets`):
 `verify` has two layers:
 
 1. **Static discovery simulation (mandatory, v0.1).** Reimplement DSH's documented discovery rules in `src/verify/discovery.ts`: roots `.dsh/skills` and `.agents/skills` relative to the repo root; direct children only (`<name>/SKILL.md`); YAML frontmatter with kebab-case `name` equal to the directory, non-empty single-line `description`, boolean `disable-model-invocation`/`user-invocable`; malformed entries are skipped. Every rule cites the DSH package README it derives from in a code comment. The simulation reports what a DSH session would catalog, and `check` compares it against the plan.
-2. **Live check (opt-in, experimental).** With `--verify-live`, if a `dsh` binary is on `PATH`, run a discovery probe against a temporary `DSH_HOME` (never the user's profile) and compare the catalog. Failure to launch DSH is `LIVE_UNVERIFIED`, not a silent pass. This layer is not an acceptance gate for v0.1.
+2. **Live check (opt-in, experimental).** With `--verify-live`, if a `dsh` binary is on `PATH` (or `DSH_BIN` names one), compose the installed bundle patch with the shipped `web` profile in a temporary `DSH_HOME`:
+   `dsh --profile dshify-probe --from-default-profile web --dump-config --patch <dest>/harness/cordis.patch.yml`.
+   A nonzero exit is `LIVE_PROBE_FAILED`; a generated preset row missing from the composed roster is `LIVE_PRESET_MISSING`; an unavailable binary is `LIVE_UNVERIFIED`. All three are verification failures (exit 4) and are never a silent pass. A version difference between the invoked `dsh --version` and `DISCOVERY_RULES.dshVersion` is `LIVE_VERSION_DRIFT` (info). The probe never reads or writes the user's profile, never installs packages, and makes no network request. This layer is not an acceptance gate for v0.1.
 
 ## 9. Lockfile
 
@@ -308,7 +312,7 @@ All seven defaults were accepted by the maintainer on 2026-11-05; implementation
 | 1 | Skill-root default strategy | `copy` (portable); `--strategy link` opt-in |
 | 2 | `--presets` scope | opt-in only; writes `.dsh/harness/`, never installs a bundle |
 | 3 | Collision suffixes | `-command` for commands, `-persona` for personas |
-| 4 | `--verify-live` in v0.1 | implemented but experimental; never an acceptance gate |
+| 4 | `--verify-live` in v0.1 | implemented (composition probe); experimental, never an acceptance gate |
 | 5 | Lockfile location/name | `.dshify.lock.json` at repo root |
 | 6 | Exit codes | `0` ok, `1` internal, `2` usage, `3` drift/conflict, `4` verification failure, `5` unsupported request |
 | 7 | Persona invocation | model-invocable **and** user-invocable (`/planner` works) |
@@ -319,6 +323,8 @@ Changing any row requires a spec PR. Finding codes, flag names, and the JSON `sc
 
 **Revision 2026-11-07 (rev. 3):** §7 now states the command-skill body layout explicitly (the argument sentence is its own paragraph; `$ARGUMENTS` becomes `the argument`) and fixes the nested-skill code as `UNSUPPORTED_NESTED_SKILL`, resolving the `NESTED_SKILL` alias in the mapping doc. Behaviour already implemented in v0.1 was pinned; no decision row changed.
 
+**Revision 2026-11-19 (rev. 4):** §7 pins the DSH `0.2.2-rc.5` preset parity rows (`plan-mode` section, `tool-office`, `interrupt: false`); the omission was a load-time failure. §8 defines `--verify-live` as a composition probe in a temporary `DSH_HOME` and names its finding codes. Decision row 4 records the implementation; the layer stays experimental.
+
 ## Appendix A — DSH discovery facts this spec depends on
 
 | Fact | Source |
@@ -328,7 +334,7 @@ Changing any row requires a spec PR. Finding codes, flag names, and the JSON `sc
 | Frontmatter requires kebab-case `name`, non-empty `description`; `disable-model-invocation` / `user-invocable` must be booleans | same |
 | Model catalog is injected durably; each description is paid for once per session | `@deepseek-ai/dsh-tool-skill` README |
 | `/name` for a user-invocable skill injects the body; a host command with the same name wins | `@deepseek-ai/dsh-client-ui-skill` README |
-| Host command set is `goal`, `plan`, `feedback`, `compact`, `permission`, `export` (zh input aliases exist) | `@deepseek-ai/dsh-commands@0.2.2-rc.1` — `lib/types/builtin.js` (`BUILTINS`, `builtinCommandTokens`) |
+| Host command set is `goal`, `plan`, `feedback`, `compact`, `permission`, `export` (zh input aliases exist) | `@deepseek-ai/dsh-commands@0.2.2-rc.5` — `lib/types/builtin.js` (`BUILTINS`, `builtinCommandTokens`) |
 | Persona/presets: `@deepseek-ai/dsh-agent-preset` + `@deepseek-ai/dsh-persona`; read-only via `@deepseek-ai/dsh-tool-fs` switches | package READMEs |
 | MCP rows: `@deepseek-ai/dsh-mcp-client`, `serverName` + stdio/streamable-http | package README |
 | `AGENTS.md` / `CLAUDE.md` are loaded as workspace instructions | `@deepseek-ai/dsh-agent-instructions` README |

@@ -21,7 +21,7 @@ export const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /**
  * DSH host commands that win `/name` over a skill. Spec §7 rev. 2: the six
- * shipped built-ins from `@deepseek-ai/dsh-commands` 0.2.2-rc.1. Keeping this
+ * shipped built-ins from `@deepseek-ai/dsh-commands` 0.2.2-rc.5. Keeping this
  * list in one place is what makes the collision rule checkable.
  */
 export const HOST_COMMANDS = [

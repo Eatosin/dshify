@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0] — 2026-11-19
+
+### Added
+
+- `verifyLive` on the `migrate_harness` tool and `--verify-live` on
+  `/migrate check`: compose the installed bundle with the local `dsh` in a
+  temporary `DSH_HOME` and report `LIVE_*` findings. Requires an installed
+  bundle patch; unavailable `dsh` is exit 4, not a silent pass.
+
 ## [0.4.1] — 2026-11-14
 
 ### Changed

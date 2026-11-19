@@ -4,9 +4,9 @@ title: tool-fs switches
 description: read/write/edit default true and can be omitted; applyPatch defaults false.
 status: verified
 package: '@deepseek-ai/dsh-tool-fs'
-version: 0.2.2-rc.1
+version: 0.2.2-rc.5
 source: README.md
-sha256: 96224e904f02ca2ab9805b9acbc5abae490fc310242d8e5f25f63567e0539ba4
+sha256: 189cf12e7d6488b95b99486eaaf3c8a4a89141c6d8d444a52a59c60a41834136
 spec: docs/spec.md §7
 ---
 

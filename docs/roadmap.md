@@ -6,7 +6,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 **Contract:** this page sequences the work; what "done" means is [spec.md §13](spec.md). Where the two overlap, the spec wins.
 
-**Status (2026-11-07):** implementation complete; every §13 criterion is covered by CI tests. Published as [`@eatosin/dshify@0.1.0`](https://www.npmjs.com/package/@eatosin/dshify) with SLSA provenance from tag `v0.1.0`; the first-time-user check is verified, the manual migration round-trip remains. Release tooling: `0.1.1` publishes through npm Trusted Publishing (OIDC) and retires the bootstrap token.
+**Status (2026-11-19):** implementation complete; every §13 criterion is covered by CI tests. The current line is [`@eatosin/dshify@0.3.0`](https://www.npmjs.com/package/@eatosin/dshify), published with SLSA provenance through Trusted Publishing; the first-time-user check is verified, the manual migration round-trip remains. Release tooling: `0.1.1` publishes through npm Trusted Publishing (OIDC) and retires the bootstrap token.
 
 **Deliverables**
 
@@ -56,7 +56,7 @@ OpenCode first, then the other harnesses, then the DSH plugin wrapper. Each vers
 
 ## v0.4 — DSH plugin + community surface
 
-**Status (2026-11-08):** the plugin wrapper landed early as `@eatosin/dshify-plugin@0.1.0` (Host-only bundle): the `migrate_harness` tool, the `/migrate` command, locale and icon display metadata, and a Trusted Publishing release workflow. Version `0.4.1` requires engine `^0.2.2` (every skill file is carried) and adds a confirmed **Apply** to the Web panel (Settings → Plugins). The route requires `confirm: true`; conflicts are reported and kept. Future versions release through the plugin Trusted Publishing workflow. The marketplace listing, `install_bundle` step and rollback remain open.
+**Status (2026-11-08):** the plugin wrapper landed early as `@eatosin/dshify-plugin@0.1.0` (Host-only bundle): the `migrate_harness` tool, the `/migrate` command, locale and icon display metadata, and a Trusted Publishing release workflow. Version `0.5.0` requires engine `^0.3.0` (every skill file is carried, presets track DSH `0.2.2-rc.5`, and `--verify-live` composes the bundle locally) and keeps the confirmed **Apply** in the Web panel (Settings → Plugins). The route requires `confirm: true`; conflicts are reported and kept. Future versions release through the plugin Trusted Publishing workflow. The marketplace listing, `install_bundle` step and rollback remain open.
 
 **Work**
 

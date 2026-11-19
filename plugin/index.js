@@ -24,7 +24,8 @@ const TOOL_DESCRIPTION =
   '"check" verifies the files, the lockfile and DSH discovery (read-only). ' +
   'apply never deletes user files and refuses to overwrite files it does not own. ' +
   'With presets, "delegation" emits a parent preset with model-routed child tools; ' +
-  '"presetPrefix" namespaces preset ids; "modelMap" maps persona id to {provider, model, tool}.';
+  '"presetPrefix" namespaces preset ids; "modelMap" maps persona id to {provider, model, tool}. ' +
+  'On "check", "verifyLive" composes the installed bundle with the local dsh in a temporary DSH_HOME.';
 
 const OUTPUT_SCHEMA = {
   type: 'object',
@@ -38,6 +39,7 @@ const OUTPUT_SCHEMA = {
     findings: { type: 'array', items: { type: 'object', additionalProperties: true } },
     artifacts: { type: 'array', items: { type: 'object', additionalProperties: true } },
     verification: { type: 'object', additionalProperties: true },
+    live: { type: 'object', additionalProperties: true },
   },
   required: ['action', 'ok', 'root'],
 };
@@ -78,6 +80,11 @@ const TOOL = {
         additionalProperties: true,
         description:
           'Persona id to { provider, model, tool }. Both provider and model are required together. Tool defaults to subagent_<persona>.',
+      },
+      verifyLive: {
+        type: 'boolean',
+        description:
+          'On check, compose the installed bundle with the local dsh in a temporary DSH_HOME. Requires an installed bundle patch.',
       },
       extraPlugins: {
         type: 'array',

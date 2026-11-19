@@ -4,9 +4,9 @@ title: Preset rows carry a stable id
 description: An agent preset is declared as a row with a required stable identifier.
 status: verified
 package: '@deepseek-ai/dsh-agent-preset'
-version: 0.2.2-rc.1
+version: 0.2.2-rc.5
 source: README.md
-sha256: 3bff455be098ec17094a43cfd418ede99afbe6d6b4d3cb874840ee7ccf1f9101
+sha256: b3e3f513a8346b7a6c07254c9d3e0f1f2c4e8c1e84cf7951fdd51846ee2a32a7
 spec: docs/spec.md §7
 ---
 

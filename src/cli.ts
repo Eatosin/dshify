@@ -18,6 +18,7 @@ import { finding, sortFindings } from './core/report.js';
 import { DISCOVERY_RULES, type DiscoveryRules } from './core/rules.js';
 import { scanRepo } from './core/scan.js';
 import { verifyDiscovery, type DiscoveryResult } from './verify/discovery.js';
+import { probeComposedBundle, type LiveProbeResult } from './verify/live.js';
 import { DEFAULT_SCAN_LIMITS, readSourceBytes } from './core/source.js';
 
 /** Output sink so the CLI is testable without touching the process streams. */
@@ -73,6 +74,7 @@ interface ParsedArgs {
   readonly strategy: 'copy' | 'link';
   readonly force: boolean;
   readonly dryRun: boolean;
+  readonly verifyLive: boolean;
   readonly help: boolean;
   readonly version: boolean;
 }
@@ -117,6 +119,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
   const extraPlugins: string[] = [];
   let force = false;
   let dryRun = false;
+  let verifyLive = false;
   let strategy: 'copy' | 'link' = 'copy';
   const roots: string[] = [];
   const positional: string[] = [];
@@ -168,6 +171,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
       if (arg === '--delegation') delegation = true;
       if (arg === '--force') force = true;
       if (arg === '--dry-run') dryRun = true;
+      if (arg === '--verify-live') verifyLive = true;
       continue;
     }
     if (arg.startsWith('-') && arg !== '-') {
@@ -210,6 +214,7 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
     strategy,
     force,
     dryRun,
+    verifyLive,
     help,
     version,
   };
@@ -726,6 +731,7 @@ interface CheckEnvelope {
     readonly sources: readonly string[];
   }>;
   readonly verification: VerificationView;
+  readonly live?: LiveView;
   readonly summary: {
     readonly planned: number;
     readonly unchanged: number;
@@ -738,14 +744,32 @@ interface CheckEnvelope {
   };
 }
 
+interface LiveView {
+  readonly status: 'verified' | 'unverified' | 'failed';
+  readonly dshVersion?: string;
+  readonly expectedPresets: readonly string[];
+  readonly seenPresets: readonly string[];
+}
+
 interface VerifyEnvelope {
   readonly kind: 'verify';
   readonly schemaVersion: 1;
   readonly rules: DiscoveryRules;
   readonly ok: boolean;
   readonly root: string;
+  readonly findings: readonly Finding[];
   readonly verification: VerificationView;
+  readonly live?: LiveView;
   readonly summary: { readonly roots: number; readonly visible: number; readonly skipped: number };
+}
+
+function liveView(result: LiveProbeResult): LiveView {
+  return {
+    status: result.status,
+    ...(result.dshVersion === undefined ? {} : { dshVersion: result.dshVersion }),
+    expectedPresets: result.expectedPresetIds,
+    seenPresets: result.seenPresetIds,
+  };
 }
 
 function verificationView(result: DiscoveryResult): VerificationView {
@@ -788,6 +812,14 @@ function renderCheckHuman(
   lines.push(`  visible  ${result.verification.visible.length}`);
   lines.push(`  skipped  ${result.verification.skipped.length}`);
   lines.push(`  rules    DSH ${DISCOVERY_RULES.dshVersion} (rules v${DISCOVERY_RULES.rulesVersion})`);
+  if (result.live !== undefined) {
+    lines.push('', 'Live');
+    lines.push(`  status   ${result.live.status}`);
+    lines.push(
+      `  presets  ${result.live.seenPresetIds.length}/${result.live.expectedPresetIds.length} composed`,
+    );
+    if (result.live.dshVersion !== undefined) lines.push(`  dsh      ${result.live.dshVersion}`);
+  }
   lines.push('', 'Findings');
   if (result.findings.length === 0) lines.push('  none');
   for (const item of result.findings) {
@@ -821,6 +853,7 @@ async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
     readResource: (absolute) => readSourceBytes(absolute, DEFAULT_SCAN_LIMITS),
     limits: DEFAULT_SCAN_LIMITS,
     version: VERSION,
+    verifyLive: parsed.verifyLive,
     ...bundle,
   });
   const dest = repoRelative(roots.repoRoot, path.resolve(roots.repoRoot, parsed.dest));
@@ -850,6 +883,7 @@ async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
         sources: sourcesByPath.get(item.path) ?? [],
       })),
       verification: verificationView(result.verification),
+      ...(result.live === undefined ? {} : { live: liveView(result.live) }),
       summary: {
         planned: result.planned.artifacts.length,
         unchanged: countCheck(result, 'unchanged'),
@@ -868,7 +902,12 @@ async function runCheck(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<num
   return result.exitCode;
 }
 
-function renderVerifyHuman(root: string, verification: DiscoveryResult, cwd: string): string {
+function renderVerifyHuman(
+  root: string,
+  verification: DiscoveryResult,
+  cwd: string,
+  live?: LiveProbeResult,
+): string {
   const lines = [
     `dshify verify ${displayRoot(root, cwd)}`,
     `  roots    ${verification.roots.join(', ') || 'none'}`,
@@ -883,6 +922,16 @@ function renderVerifyHuman(root: string, verification: DiscoveryResult, cwd: str
   for (const entry of verification.skipped) {
     lines.push(`    skipped ${entry.path} (${entry.reason})`);
   }
+  if (live !== undefined) {
+    lines.push('', 'Live');
+    lines.push(`  status   ${live.status}`);
+    lines.push(`  presets  ${live.seenPresetIds.length}/${live.expectedPresetIds.length} composed`);
+    if (live.dshVersion !== undefined) lines.push(`  dsh      ${live.dshVersion}`);
+    for (const item of live.findings) {
+      const where = item.path === undefined ? '' : ` ${item.path}`;
+      lines.push(`  ${item.severity.padEnd(7)} ${item.code.padEnd(20)}${where}`);
+    }
+  }
   return lines.join('\n');
 }
 
@@ -892,7 +941,14 @@ async function runVerify(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<nu
   const verification = await verifyDiscovery(roots.repoRoot, {
     maxFileBytes: DEFAULT_SCAN_LIMITS.maxFileBytes,
   });
-  const ok = verification.complete;
+  const live = parsed.verifyLive
+    ? await probeComposedBundle({
+        repoRoot: roots.repoRoot,
+        patchPath: path.join(roots.repoRoot, parsed.dest, 'harness', 'cordis.patch.yml'),
+      })
+    : undefined;
+  const findings = live?.findings ?? [];
+  const ok = verification.complete && (live === undefined || live.status === 'verified');
   if (parsed.json) {
     const envelope: VerifyEnvelope = {
       kind: 'verify',
@@ -900,7 +956,9 @@ async function runVerify(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<nu
       rules: DISCOVERY_RULES,
       ok,
       root: roots.repoRoot,
+      findings,
       verification: verificationView(verification),
+      ...(live === undefined ? {} : { live: liveView(live) }),
       summary: {
         roots: verification.roots.length,
         visible: verification.visible.length,
@@ -909,7 +967,7 @@ async function runVerify(parsed: ParsedArgs, io: CliIO, cwd: string): Promise<nu
     };
     io.out(JSON.stringify(envelope, null, 2));
   } else if (!parsed.quiet) {
-    io.out(renderVerifyHuman(roots.repoRoot, verification, cwd));
+    io.out(renderVerifyHuman(roots.repoRoot, verification, cwd, live));
   }
   return ok ? 0 : 4;
 }

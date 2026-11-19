@@ -23,7 +23,7 @@ export interface DiscoveryRules {
 
 export const DISCOVERY_RULES: DiscoveryRules = {
   rulesVersion: 1,
-  dshVersion: '0.2.2-rc.1',
+  dshVersion: '0.2.2-rc.5',
   source: 'docs/dsh-facts',
   packages: ['@deepseek-ai/dsh-skill-filesystem', '@deepseek-ai/dsh-tool-skill'],
 };

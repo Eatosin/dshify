@@ -4,9 +4,9 @@ title: MCP row fields and tool naming
 description: transport and serverName are required; tools appear as mcp__<serverName>__<tool>.
 status: verified
 package: '@deepseek-ai/dsh-mcp-client'
-version: 0.2.2-rc.1
+version: 0.2.2-rc.5
 source: README.md
-sha256: 92d8f0fc08518fbfd30550be89e87490db9fb5906493fb6a86c86bf7c8e3291b
+sha256: 74db776ebeb4a458fccfb1b6a297ec6985a1031148846e9f59080f5a40b77b94
 spec: docs/spec.md §7; Appendix A
 ---
 

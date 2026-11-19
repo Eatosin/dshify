@@ -7,6 +7,7 @@
 - [The shipped host-command set](host-commands.md) - The exact built-ins that win /name over a skill, read from shipped code. (verified)
 - [MCP row fields and tool naming](mcp-transport.md) - transport and serverName are required; tools appear as mcp__<serverName>__<tool>. (verified)
 - [Persona is a preset-mounted row](persona-row.md) - A persona is registered per agent by mounting the persona row inside a preset. (verified)
+- [Plan mode requires a non-empty section](plan-mode-section.md) - A plan-mode row must carry deployment-owned guidance; omitting it fails at load. (verified)
 - [Preset rows carry a stable id](preset-row.md) - An agent preset is declared as a row with a required stable identifier. (verified)
 - [Skill roots and ranks](skill-roots.md) - Where a DSH session looks for project skills and in what order. (verified)
 - [tool-fs switches](tool-fs-switches.md) - read/write/edit default true and can be omitted; applyPatch defaults false. (verified)

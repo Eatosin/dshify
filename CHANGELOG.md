@@ -2,6 +2,30 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows the release policy in [docs/roadmap.md](docs/roadmap.md#release-policy).
 
+## [0.3.0] — 2026-11-19
+
+### Added
+
+- `--verify-live` now composes the installed bundle with the local `dsh` in a
+  temporary `DSH_HOME`, using the shipped `web` profile. It reports
+  `LIVE_UNVERIFIED`, `LIVE_PROBE_FAILED`, `LIVE_PRESET_MISSING` (all exit 4)
+  and `LIVE_VERSION_DRIFT` (info). `DSH_BIN` selects the executable; the probe
+  never touches the user's profile, installs nothing, and makes no network
+  request.
+- `check` and `verify` JSON add a `live` object; `verify` now also carries
+  `findings`.
+
+### Fixed
+
+- The generated parent preset omitted the required `plan-mode` `section`, which
+  made the preset fail at plugin load on DSH 0.2.2. It now carries the shipped
+  standard guidance, and `check` rejects a patch whose plan-mode row has no
+  non-empty section.
+- Preset rows now track DSH 0.2.2-rc.5: `tool-office` is included and
+  `tool-subagent-control` sets `interrupt: false`.
+- The pinned DSH fact register moved to `0.2.2-rc.5` (12 notes); discovery
+  rules are unchanged.
+
 ## [0.2.2] — 2026-11-14
 
 ### Fixed

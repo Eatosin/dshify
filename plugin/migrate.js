@@ -58,6 +58,7 @@ export function validateInput(value) {
         'presetPrefix',
         'modelMap',
         'extraPlugins',
+        'verifyLive',
       ].includes(key)
     ) {
       throw new Error(`migrate_harness: unknown argument ${key}`);
@@ -65,6 +66,7 @@ export function validateInput(value) {
   }
   const delegation = readBoolean('delegation');
   const presets = readBoolean('presets');
+  const verifyLive = readBoolean('verifyLive');
   if (delegation && !presets) {
     throw new Error('migrate_harness: delegation requires presets');
   }
@@ -107,6 +109,7 @@ export function validateInput(value) {
     presetPrefix: presetPrefix ?? (delegation ? '' : undefined),
     modelMap: modelMap ?? {},
     extraPlugins: extraPlugins ?? [],
+    verifyLive,
   };
 }
 
@@ -252,7 +255,12 @@ export async function runAction(input) {
     };
   }
 
-  const checked = await checkRepo(ir, { ...base, lockfilePath: LOCKFILE, limits: DEFAULT_SCAN_LIMITS });
+  const checked = await checkRepo(ir, {
+    ...base,
+    lockfilePath: LOCKFILE,
+    limits: DEFAULT_SCAN_LIMITS,
+    verifyLive: input.verifyLive,
+  });
   return {
     action: 'check',
     ok: checked.ok,
@@ -265,6 +273,16 @@ export async function runAction(input) {
       findings: checked.findings.length,
     },
     findings: [...findings, ...checked.findings],
+    ...(checked.live === undefined
+      ? {}
+      : {
+          live: {
+            status: checked.live.status,
+            ...(checked.live.dshVersion === undefined ? {} : { dshVersion: checked.live.dshVersion }),
+            expectedPresets: checked.live.expectedPresetIds,
+            seenPresets: checked.live.seenPresetIds,
+          },
+        }),
     verification: {
       roots: checked.verification.roots,
       visible: checked.verification.visible.map((skill) => skill.path),
@@ -291,6 +309,7 @@ export function parseCommand(rawInput) {
   let presets = false;
   let force = false;
   let delegation = false;
+  let verifyLive = false;
   let presetPrefix;
   const positional = [];
   for (let index = 0; index < tokens.length; index += 1) {
@@ -298,6 +317,7 @@ export function parseCommand(rawInput) {
     if (token === '--presets') presets = true;
     else if (token === '--force') force = true;
     else if (token === '--delegation') delegation = true;
+    else if (token === '--verify-live') verifyLive = true;
     else if (token === '--preset-prefix') {
       presetPrefix = tokens[index + 1];
       index += 1;
@@ -311,6 +331,7 @@ export function parseCommand(rawInput) {
     presets,
     force,
     delegation: delegation && presets,
+    verifyLive,
     ...(presetPrefix === undefined ? {} : { presetPrefix }),
     extraPlugins: [],
   };
@@ -330,11 +351,16 @@ export function formatResult(value) {
       .join(' ');
     if (summary !== '') lines.push(`summary: ${summary}`);
   }
+  if (value.live !== undefined) {
+    lines.push(
+      `live: ${value.live.status} (${value.live.seenPresets.length}/${value.live.expectedPresets.length} presets)`,
+    );
+  }
   if (Array.isArray(value.findings) && value.findings.length > 0) {
     lines.push('findings:');
     for (const finding of value.findings) {
       const where = finding.path === undefined ? '' : ` ${finding.path}`;
-      lines.push(`- ${finding.code ?? finding.code} (${finding.severity ?? 'info'})${where}`);
+      lines.push(`- ${finding.code} (${finding.severity ?? 'info'})${where}`);
     }
   }
   if (Array.isArray(value.artifacts) && value.artifacts.length > 0) {

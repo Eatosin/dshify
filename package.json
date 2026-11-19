@@ -1,17 +1,20 @@
 {
   "name": "@eatosin/dshify",
-  "version": "0.2.2",
-  "description": "Port agent harness surfaces to DeepSeek Harness with verification. OpenCode first.",
+  "version": "0.3.0",
+  "description": "Convert OpenCode skills, commands, personas, and MCP servers to DeepSeek Harness (DSH) with deterministic output and live composition verification.",
   "keywords": [
+    "deepseek",
     "deepseek-harness",
     "dsh",
     "opencode",
-    "claude-code",
-    "codex",
-    "agents",
-    "skills",
+    "agent-harness",
     "migration",
-    "cli"
+    "cli",
+    "ai-agents",
+    "skills",
+    "mcp",
+    "developer-tools",
+    "typescript"
   ],
   "license": "MIT",
   "author": "Owadokun Tosin Tobi",

@@ -55,7 +55,11 @@ OpenCode V2 reads instruction surface from these places (all relative to the rep
 | MCP server name outside `[A-Za-z0-9_-]{1,32}` | skipped | `unsupported` | `MCP_INVALID_NAME` (error) |
 | Resource file unreadable, or larger than the size limit | not copied | `unsupported` | `RESOURCE_READ_FAILED` (error) |
 | MCP server when `--presets` is not given | not emitted; reported as manual | `manual` | `MCP_PRESETS_REQUIRED` (info) |
-| Emitted patch is not a top-level array, or repeats a row id or preset id | rejected by `check` | `unsupported` | `BUNDLE_PATCH_INVALID` (error) |
+| Emitted patch is not a top-level array, repeats a row id or preset id, or omits the required plan-mode `section` | rejected by `check` | `unsupported` | `BUNDLE_PATCH_INVALID` (error) |
+| Live probe: `dsh` is unavailable | cannot compose the bundle | `unsupported` | `LIVE_UNVERIFIED` (error) |
+| Live probe: `dsh --dump-config` exits nonzero | the installed DSH would reject the bundle | `unsupported` | `LIVE_PROBE_FAILED` (error) |
+| Live probe: a generated preset is absent from the composed roster | the bundle composed but the preset is not selectable | `unsupported` | `LIVE_PRESET_MISSING` (error) |
+| Live probe: installed DSH differs from the checked rules | reported, not failed | `adapted` | `LIVE_VERSION_DRIFT` (info) |
 | Skill `whenToUse` | preserved; falls back to the description | `exact` | — |
 | MCP `env` / `environment` and `cwd` | row `env` / `cwd`; secret keys and values dropped | `adapted` | — |
 | `opencode.json` `instructions[]` beyond AGENTS.md | not loaded | `manual` | `INSTRUCTIONS_EXTRA_UNMAPPED` (warning) |

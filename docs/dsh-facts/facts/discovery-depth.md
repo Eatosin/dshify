@@ -4,7 +4,7 @@ title: Discovery is one level deep
 description: Only direct children of a root are skills; nested bundles are deliberately ignored.
 status: verified
 package: '@deepseek-ai/dsh-skill-filesystem'
-version: 0.2.2-rc.1
+version: 0.2.2-rc.5
 source: README.md
 sha256: f73e09f41d99ca7684bcb96d20f26c5d177331a68c23392b7c36d8182f6bd608
 spec: docs/spec.md §8; Appendix A

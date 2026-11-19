@@ -21,6 +21,7 @@ import { finding, sortFindings } from './report.js';
 import { parse as parseYaml } from 'yaml';
 import { sha256Hex } from './source.js';
 import { verifyDiscovery, type DiscoveryResult } from '../verify/discovery.js';
+import { probeComposedBundle, type LiveProbeResult } from '../verify/live.js';
 
 /**
  * Check. Contract: docs/spec.md §5.4 and §8.
@@ -43,12 +44,17 @@ export interface CheckArtifactResult {
 export interface CheckOptions extends PlanOptions {
   readonly lockfilePath: string;
   readonly limits: ScanLimits;
+  /** Probe the installed DSH binary with a temporary DSH_HOME (spec §8). */
+  readonly verifyLive?: boolean;
+  /** DSH executable for the live probe; defaults to `$DSH_BIN` then `dsh`. */
+  readonly dshBin?: string;
 }
 
 export interface CheckResult {
   readonly planned: PlannedOutput;
   readonly lockfile: DshifyLockfile | undefined;
   readonly verification: DiscoveryResult;
+  readonly live?: LiveProbeResult;
   readonly results: readonly CheckArtifactResult[];
   readonly conflicts: readonly Conflict[];
   readonly findings: readonly Finding[];
@@ -81,6 +87,54 @@ function validateBundlePatch(text: string): string[] {
   const problems: string[] = [];
   const rowIds = new Set<string>();
   const presetIds = new Set<string>();
+
+  const visit = (record: Record<string, unknown>, topLevel: boolean): void => {
+    const id = record['id'];
+    // Loader row ids are unique among inserted top-level rows; nested rows are
+    // scoped per preset and intentionally repeat (`tool-fs`, `persona`, ...).
+    if (topLevel && typeof id === 'string') {
+      if (rowIds.has(id)) problems.push(`duplicate row id "${id}"`);
+      rowIds.add(id);
+    }
+    if (record['name'] === '@deepseek-ai/dsh-agent-preset') {
+      const config = record['config'];
+      const presetId =
+        typeof config === 'object' && config !== null
+          ? (config as Record<string, unknown>)['id']
+          : undefined;
+      if (typeof presetId === 'string') {
+        if (presetIds.has(presetId)) problems.push(`duplicate preset config id "${presetId}"`);
+        presetIds.add(presetId);
+      }
+    }
+    // `@deepseek-ai/dsh-plan-mode` validates its required guidance at plugin
+    // load. Catch the omission here so a generated preset cannot fail only
+    // when a user starts a session.
+    if (record['name'] === '@deepseek-ai/dsh-plan-mode') {
+      const config = record['config'];
+      const section =
+        typeof config === 'object' && config !== null
+          ? (config as Record<string, unknown>)['section']
+          : undefined;
+      if (typeof section !== 'string' || section.trim() === '') {
+        const id = typeof record['id'] === 'string' ? ` "${record['id']}"` : '';
+        problems.push(`plan-mode row${id} needs a non-empty config.section`);
+      }
+    }
+
+    const config = record['config'];
+    const children: unknown[] = [];
+    if (Array.isArray(config)) children.push(...config);
+    if (typeof config === 'object' && config !== null) {
+      const plugins = (config as Record<string, unknown>)['plugins'];
+      if (Array.isArray(plugins)) children.push(...plugins);
+    }
+    for (const child of children) {
+      if (typeof child !== 'object' || child === null) continue;
+      visit(child as Record<string, unknown>, false);
+    }
+  };
+
   for (const entry of document) {
     if (typeof entry !== 'object' || entry === null) {
       problems.push('each patch entry must be a mapping');
@@ -97,23 +151,7 @@ function validateBundlePatch(text: string): string[] {
         problems.push('each row must be a mapping');
         continue;
       }
-      const record = row as Record<string, unknown>;
-      const id = record['id'];
-      if (typeof id === 'string') {
-        if (rowIds.has(id)) problems.push(`duplicate row id "${id}"`);
-        rowIds.add(id);
-      }
-      if (record['name'] === '@deepseek-ai/dsh-agent-preset') {
-        const config = record['config'];
-        const presetId =
-          typeof config === 'object' && config !== null
-            ? (config as Record<string, unknown>)['id']
-            : undefined;
-        if (typeof presetId === 'string') {
-          if (presetIds.has(presetId)) problems.push(`duplicate preset config id "${presetId}"`);
-          presetIds.add(presetId);
-        }
-      }
+      visit(row as Record<string, unknown>, true);
     }
   }
   return problems;
@@ -240,6 +278,30 @@ export async function checkRepo(ir: HarnessIR, options: CheckOptions): Promise<C
     }
   }
 
+  // Live composition is opt-in and always uses a temporary DSH_HOME. It answers
+  // the question the static checks cannot: would the installed DSH actually
+  // load this bundle, including every generated preset?
+  let live: LiveProbeResult | undefined;
+  if (options.verifyLive) {
+    const patch = planned.artifacts.find((artifact) => artifact.kind === 'bundle-patch');
+    if (patch === undefined) {
+      verificationFailure = true;
+      findings.push(
+        finding('LIVE_UNVERIFIED', 'no bundle patch is planned; --verify-live requires --presets', {
+          path: repoRelative(options.repoRoot, path.join(options.repoRoot, options.dest)),
+        }),
+      );
+    } else {
+      live = await probeComposedBundle({
+        repoRoot: options.repoRoot,
+        patchPath: path.join(options.repoRoot, patch.path),
+        ...(options.dshBin === undefined ? {} : { bin: options.dshBin }),
+      });
+      findings.push(...live.findings);
+      if (live.status !== 'verified') verificationFailure = true;
+    }
+  }
+
   const plannedPaths = new Set(planned.artifacts.map((artifact) => artifact.path));
   for (const priorArtifact of lockfile?.artifacts ?? []) {
     if (plannedPaths.has(priorArtifact.path)) continue;
@@ -314,6 +376,7 @@ export async function checkRepo(ir: HarnessIR, options: CheckOptions): Promise<C
     planned,
     lockfile,
     verification,
+    ...(live === undefined ? {} : { live }),
     results: ordered,
     conflicts,
     findings: sortFindings(findings),

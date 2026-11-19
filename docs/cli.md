@@ -36,7 +36,7 @@ dshify <command> [path] [flags]
 | `--model-map <file>` | none | JSON file: persona id to `{ provider, model, tool }`. Requires `--delegation`. |
 | `--extra-plugin <specifier>` | — | Extra bundle-local plugin row, relative to `cordis.patch.yml` (repeatable). The plugin file is user-authored. |
 | `--force` | off | Overwrite conflicting artifacts (reports `FORCED`). |
-| `--verify-live` | off | Experimental: probe the local `dsh` binary with a temp `DSH_HOME`. |
+| `--verify-live` | off | Compose the installed bundle with the local `dsh` in a temp `DSH_HOME` (never the user's profile). Unavailable `dsh` is exit 4. |
 | `--no-color` | auto | Disable ANSI (also honors `NO_COLOR`). |
 | `--help`, `--version` | — | Usage / version. |
 
@@ -97,7 +97,7 @@ All `--json` output is one object with a discriminator, a `schemaVersion`, the d
   "harness": { "id": "opencode", "version": "0.1.0" },
   "rules": {
     "rulesVersion": 1,
-    "dshVersion": "0.2.2-rc.1",
+    "dshVersion": "0.2.2-rc.5",
     "source": "docs/dsh-facts",
     "packages": ["@deepseek-ai/dsh-skill-filesystem", "@deepseek-ai/dsh-tool-skill"]
   },
@@ -120,7 +120,9 @@ Every envelope carries the same `rules` object: `rulesVersion` increases when th
 
 `apply` reports one `status` per artifact: `written`, `updated`, `unchanged`, `repaired`, `forced`, `conflict`, `name-conflict`, `orphan`. Its finding codes are `REPAIRED`, `UPDATED`, `FORCED`, `CONFLICT`, `NAME_CONFLICT` and `ORPHAN_ARTIFACT`; a run with any conflict or orphan exits 3.
 
-`check` reports `unchanged`, `drift`, `conflict`, `missing` or `orphan` per artifact, and adds `verification: { roots, visible, skipped, complete }` to the envelope. It exits 4 on `MISSING_ARTIFACT` or `DISCOVERY_MISS`, and 3 on `DRIFT`, `CONFLICT`, `LOCKFILE_MISSING` or `ORPHAN_ARTIFACT`. `verify` reports the discovered catalog only and exits 4 when a root could not be read.
+`check` reports `unchanged`, `drift`, `conflict`, `missing` or `orphan` per artifact, and adds `verification: { roots, visible, skipped, complete }` to the envelope. It exits 4 on `MISSING_ARTIFACT`, `DISCOVERY_MISS` or any live-probe failure, and 3 on `DRIFT`, `CONFLICT`, `LOCKFILE_MISSING` or `ORPHAN_ARTIFACT`. `verify` reports the discovered catalog and exits 4 when a root could not be read.
+
+With `--verify-live`, `check` and `verify` also add `live: { status, dshVersion?, expectedPresets, seenPresets }` and these findings: `LIVE_UNVERIFIED` (dsh unavailable, error), `LIVE_PROBE_FAILED` (nonzero `dsh --dump-config`, error), `LIVE_PRESET_MISSING` (a generated preset is absent from the composed roster, error), and `LIVE_VERSION_DRIFT` (installed dsh differs from the checked rules, info). The probe composes the installed patch with the shipped `web` template in a temporary `DSH_HOME`; it never touches the user's profile and makes no network request. `verify` now also carries `findings`.
 
 ## Examples (target behavior for v0.1)
 
@@ -146,6 +148,7 @@ dshify apply .
 | `NO_COLOR` | Disable ANSI output |
 | `DSHIFY_LOG` | `silent`, `normal` (default), `verbose` — diagnostics on stderr only |
 | `DSH_HOME` | Used only by `--verify-live` (always overridden with a temp dir) |
+| `DSH_BIN` | `dsh` executable used by `--verify-live`; defaults to `dsh` on `PATH` |
 | `CI` | Never changes behavior; useful only for default `--no-color` |
 
 ## Compatibility

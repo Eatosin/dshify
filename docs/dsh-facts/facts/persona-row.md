@@ -4,9 +4,9 @@ title: Persona is a preset-mounted row
 description: A persona is registered per agent by mounting the persona row inside a preset.
 status: verified
 package: '@deepseek-ai/dsh-persona'
-version: 0.2.2-rc.1
+version: 0.2.2-rc.5
 source: README.md
-sha256: 214628a5cbaa47adcffe0528ebcf26f5c8db58e51b0dfa5c3c774668d5dc56ba
+sha256: 179c7a56f13a7e17e9a87cf17b270838dda49ec69ca202644020f5fcdac73a8a
 spec: docs/spec.md §7
 ---
 

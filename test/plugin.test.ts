@@ -114,6 +114,33 @@ describe('migrate_harness tool', () => {
     expect(checked['verification']['visible'].length).toBeGreaterThanOrEqual(4);
   });
 
+  it('fails check closed when verifyLive cannot find dsh', async () => {
+    const root = await fixtureCopy();
+    const { tool } = await load();
+    await tool.execute({ action: 'apply', path: root, dest: '.dsh', presets: true });
+    const previous = process.env['DSH_BIN'];
+    process.env['DSH_BIN'] = path.join(root, 'missing-dsh');
+    try {
+      const checked = await tool.execute({
+        action: 'check',
+        path: root,
+        dest: '.dsh',
+        presets: true,
+        verifyLive: true,
+      });
+      expect(checked['exitCode']).toBe(4);
+      expect(checked['live']['status']).toBe('unverified');
+      expect(
+        (checked['findings'] as Array<{ code: string }>).some(
+          (item) => item.code === 'LIVE_UNVERIFIED',
+        ),
+      ).toBe(true);
+    } finally {
+      if (previous === undefined) delete process.env['DSH_BIN'];
+      else process.env['DSH_BIN'] = previous;
+    }
+  });
+
   it('rejects invalid input with a clear message', async () => {
     const { tool } = await load();
     await expect(tool.execute({ action: 'publish' })).rejects.toThrow(/action must be/);

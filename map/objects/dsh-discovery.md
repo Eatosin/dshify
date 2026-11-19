@@ -5,14 +5,14 @@ title: DSH discovery
 description: The verification noun — simulate what a DSH session would catalog, from fixed roots and frontmatter rules.
 universe: live
 status: verified
-implementation: partial
-verified: 2026-11-07 @ f33e8d7
-entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts (implemented; live probe remains); docs/dsh-facts (checked facts)
+implementation: live
+verified: 2026-11-19 @ 010d423
+entity: docs/spec.md §8 + Appendix A (contract); src/verify/discovery.ts + src/verify/live.ts (implemented); docs/dsh-facts (checked facts at 0.2.2-rc.5)
 ---
 
 # DSH discovery — what a session would actually catalog
 
-The rules a DSH session uses to find skills, reimplemented offline so `check` can prove an emitted skill is visible. Contract: `docs/spec.md` §8 — the roots, ranks and frontmatter grammar are recorded there (Appendix A) and are not repeated here. `src/verify/discovery.ts` implements the simulation for the two project roots and `check` consumes it; the shipped quotes behind each rule are pinned in [`docs/dsh-facts/`](../../docs/dsh-facts/CONTEXT.md) (`partial`: the opt-in live probe remains).
+The rules a DSH session uses to find skills, reimplemented offline so `check` can prove an emitted skill is visible. Contract: `docs/spec.md` §8 — the roots, ranks and frontmatter grammar are recorded there (Appendix A) and are not repeated here. `src/verify/discovery.ts` implements the simulation for the two project roots and `check` consumes it; `src/verify/live.ts` adds the opt-in composition probe; the shipped quotes behind each rule are pinned in [`docs/dsh-facts/`](../../docs/dsh-facts/CONTEXT.md).
 
 ## Why this shape
 
@@ -20,14 +20,14 @@ Static simulation is the only verification that works offline, in CI, on every p
 
 **Resolved 2026-11-06 (spec rev. 2).** Shipped `@deepseek-ai/dsh-commands` 0.2.2-rc.1 declares six host commands; the spec previously reserved four, missing `feedback` and `export`. Spec rev. 2 corrected §7/§14/Appendix A, so the collision rule is implemented against the shipped set. This is the drift a checked fact register (`docs/dsh-facts/`, P2) exists to catch before a coding step hardens a stale list.
 
-Citations: `docs/spec.md` §7 (reserved commands), §8, Appendix A; `@deepseek-ai/dsh-skill-filesystem` README at 0.2.2-rc.1; `@deepseek-ai/dsh-commands` `lib/types/builtin.js` at 0.2.2-rc.1.
+Citations: `docs/spec.md` §7 (reserved commands), §8, Appendix A; `@deepseek-ai/dsh-skill-filesystem` README at 0.2.2-rc.5; `@deepseek-ai/dsh-commands` `lib/types/builtin.js` at 0.2.2-rc.5.
 
 ## Shape
 
 - Input: a repository root plus limits. Output: what a session would catalog (visible), what it skipped and why, which roots existed, and whether the read was complete.
 - A planned-but-invisible artifact fails `check` with `DISCOVERY_MISS` (verification exit code). Malformed entries are skipped *with a reason*, never silently.
-- The optional live probe compares the simulation against a real session in a temporary `DSH_HOME`, never the user's profile; failing to launch DSH is `LIVE_UNVERIFIED`, not a pass.
-- Documented source of truth today: the shipped package READMEs at 0.2.2-rc.1. When they drift from the recorded facts, the fact register is updated first (P2), then the spec in a spec PR.
+- The optional live probe composes the installed bundle patch with the shipped `web` profile in a temporary `DSH_HOME`, never the user's profile; a nonzero `dsh --dump-config` is `LIVE_PROBE_FAILED`, a missing preset row is `LIVE_PRESET_MISSING`, and failing to launch DSH is `LIVE_UNVERIFIED` — all exit 4, never a pass.
+- Documented source of truth today: the shipped package READMEs at 0.2.2-rc.5. When they drift from the recorded facts, the fact register is updated first (P2), then the spec in a spec PR.
 
 ## Connected to
 
@@ -38,7 +38,7 @@ Citations: `docs/spec.md` §7 (reserved commands), §8, Appendix A; `@deepseek-a
 
 ## If you change this
 
-- **Hits:** `docs/spec.md` §8 and Appendix A (spec PR first), `src/verify/discovery.ts`, `src/core/check.ts`, `test/discovery.test.ts`, `test/check.test.ts`, `docs/mapping/opencode.md` §3, and the emitted frontmatter in [`emitter-contract`](emitter-contract.md).
+- **Hits:** `docs/spec.md` §8 and Appendix A (spec PR first), `src/verify/discovery.ts`, `src/verify/live.ts`, `src/core/check.ts`, `test/discovery.test.ts`, `test/check.test.ts`, `test/live.test.ts`, `docs/mapping/opencode.md` §3, and the emitted frontmatter in [`emitter-contract`](emitter-contract.md).
 - **Does not hit:** adapters (they never read DSH rules), or the lockfile — the wrong next noun is `lockfile-write-matrix`.
 
 ## Surfaces
@@ -46,7 +46,7 @@ Citations: `docs/spec.md` §7 (reserved commands), §8, Appendix A; `@deepseek-a
 | Surface | Role |
 |---|---|
 | `check` / `verify` | reads the verdict |
-| `src/verify/live.ts` (ghost, opt-in) | compares against a real session |
+| `src/verify/live.ts` (opt-in) | composes the bundle with a real DSH |
 | emitted `.dsh/skills/**` | subject of the simulation |
 | CI | consumes the exit code |
 

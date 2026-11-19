@@ -152,6 +152,22 @@ describe('v0.2 preset bundle', () => {
       'agency-solo',
       'agency-writer',
     ]);
+    // DSH 0.2.2-rc.5 ships interrupt: false on the built-in control row.
+    const control = children.find((row) => row.id === 'tool-subagent-control');
+    expect(control?.config).toEqual({ interrupt: false });
+  });
+
+  it('emits the required plan-mode guidance and the current standard tools', async () => {
+    const { artifacts } = await scenario();
+    const plugins = pluginsOf(patchRows(artifacts), 'agency-main');
+    const planning = plugins.find((row) => row.id === 'planning');
+    expect(planning).toBeDefined();
+    const planMode = ((planning!.config as unknown as Row[]) ?? []).find(
+      (row) => row.id === 'plan-mode',
+    );
+    expect(planMode?.config?.['section']).toContain('You are in plan mode.');
+    expect(String(planMode?.config?.['section']).length).toBeGreaterThan(500);
+    expect(plugins.some((row) => row.id === 'tool-office')).toBe(true);
   });
 
   it('adds bundle-local plugin rows relative to the patch', async () => {

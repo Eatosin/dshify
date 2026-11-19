@@ -237,6 +237,53 @@ describe('preset bundle — apply and check', () => {
     expect(checked.findings.map((entry) => entry.code)).toContain('BUNDLE_PATCH_INVALID');
   });
 
+  it('rejects a plan-mode row without its required section', async () => {
+    const { parent, root } = await copyFixture('opencode-basic');
+    tempParents.push(parent);
+    const ir = await scanned('opencode-basic', root);
+    const applyOptions = {
+      repoRoot: root,
+      dest: '.dsh',
+      lockfilePath: '.dshify.lock.json',
+      presets: true,
+      strategy: 'copy' as const,
+      force: false,
+      version: '0.1.0',
+      readResource: (absolute: string) => readSourceBytes(absolute, limits),
+    };
+    expect((await applyRepo(ir, applyOptions)).ok).toBe(true);
+
+    const patchPath = path.join(root, '.dsh/harness/cordis.patch.yml');
+    await writeFile(
+      patchPath,
+      [
+        '- insert:',
+        '    - id: preset-basic',
+        "      name: '@deepseek-ai/dsh-agent-preset'",
+        '      config:',
+        '        id: basic',
+        '        plugins:',
+        '          - id: planning',
+        '            name: cordis:group',
+        '            group: true',
+        '            config:',
+        '              - id: plan-mode',
+        "                name: '@deepseek-ai/dsh-plan-mode'",
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const checked = await checkRepo(ir, {
+      ...applyOptions,
+      force: undefined,
+      limits,
+    } as never);
+    expect(checked.exitCode).toBe(4);
+    expect(checked.findings.map((entry) => entry.code)).toContain('BUNDLE_PATCH_INVALID');
+    expect(checked.findings.some((entry) => entry.message.includes('config.section'))).toBe(true);
+  });
+
   it('keeps secrets out of the lockfile for auth-bearing MCP servers', async () => {
     const { parent, root } = await copyFixture('opencode-mcp-auth');
     tempParents.push(parent);
